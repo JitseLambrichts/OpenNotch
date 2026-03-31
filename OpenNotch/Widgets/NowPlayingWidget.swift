@@ -1,5 +1,6 @@
 import SwiftUI
 import Combine
+import AppKit
 
 // MARK: – Now Playing Data Model
 
@@ -7,6 +8,7 @@ struct NowPlayingInfo: Equatable {
     var trackName: String = ""
     var artistName: String = ""
     var albumName: String = ""
+    var artworkURL: String = ""
     var isPlaying: Bool = false
     var appName: String = ""
 
@@ -71,14 +73,14 @@ final class NowPlayingService {
                     set trackName to name of current track
                     set artistName to artist of current track
                     set albumName to album of current track
-                    return trackName & "|||" & artistName & "|||" & albumName & "|||playing"
+                    return trackName & "|||" & artistName & "|||" & albumName & "|||" & "" & "|||playing"
                 else if player state is paused then
                     set trackName to name of current track
                     set artistName to artist of current track
                     set albumName to album of current track
-                    return trackName & "|||" & artistName & "|||" & albumName & "|||paused"
+                    return trackName & "|||" & artistName & "|||" & albumName & "|||" & "" & "|||paused"
                 else
-                    return "|||||||stopped"
+                    return "||||||||||||stopped"
                 end if
             end tell
             """
@@ -89,14 +91,16 @@ final class NowPlayingService {
                     set trackName to name of current track
                     set artistName to artist of current track
                     set albumName to album of current track
-                    return trackName & "|||" & artistName & "|||" & albumName & "|||playing"
+                    set artworkURL to artwork url of current track
+                    return trackName & "|||" & artistName & "|||" & albumName & "|||" & artworkURL & "|||playing"
                 else if player state is paused then
                     set trackName to name of current track
                     set artistName to artist of current track
                     set albumName to album of current track
-                    return trackName & "|||" & artistName & "|||" & albumName & "|||paused"
+                    set artworkURL to artwork url of current track
+                    return trackName & "|||" & artistName & "|||" & albumName & "|||" & artworkURL & "|||paused"
                 else
-                    return "|||||||stopped"
+                    return "||||||||||||stopped"
                 end if
             end tell
             """
@@ -109,12 +113,13 @@ final class NowPlayingService {
         guard error == nil, let output = result.stringValue else { return nil }
 
         let parts = output.components(separatedBy: "|||")
-        guard parts.count >= 4 else { return nil }
+        guard parts.count >= 5 else { return nil }
 
         let track = parts[0]
         let artist = parts[1]
         let album = parts[2]
-        let state = parts[3]
+        let artworkURL = parts[3]
+        let state = parts[4]
 
         if track.isEmpty && artist.isEmpty { return nil }
 
@@ -122,6 +127,7 @@ final class NowPlayingService {
             trackName: track,
             artistName: artist,
             albumName: album,
+            artworkURL: artworkURL,
             isPlaying: state == "playing",
             appName: name
         )
@@ -189,28 +195,34 @@ struct NowPlayingWidget: View {
             } else {
                 // Album Art
                 ZStack(alignment: .bottomTrailing) {
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(
-                            LinearGradient(
-                                colors: [appearance.color, .blue, .purple],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                        .frame(width: 80, height: 80)
-                        .overlay(
-                            Image(systemName: "music.note")
-                                .font(.system(size: 30))
-                                .foregroundStyle(.white.opacity(0.8))
-                        )
+                    Group {
+                        if let artwork = URL(string: service.info.artworkURL), !service.info.artworkURL.isEmpty {
+                            AsyncImage(url: artwork) { phase in
+                                switch phase {
+                                case .success(let image):
+                                    image
+                                        .resizable()
+                                        .scaledToFill()
+                                default:
+                                    artworkPlaceholder
+                                }
+                            }
+                        } else {
+                            artworkPlaceholder
+                        }
+                    }
+                    .frame(width: 80, height: 80)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
 
-                    // Source Mini Icon
-                    Image(systemName: service.info.appName == "Spotify" ? "record.circle.fill" : "apple.logo")
-                        .font(.system(size: 14))
-                        .foregroundStyle(.white)
+                    Image(nsImage: sourceBadgeIcon)
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: 18, height: 18)
+                        .clipShape(Circle())
+                        .overlay(
+                            Circle().stroke(Color.white.opacity(0.35), lineWidth: 1)
+                        )
                         .padding(4)
-                        .background(Circle().fill(Color.red))
-                        .padding(2)
                 }
 
                 VStack(alignment: .leading, spacing: 8) {
@@ -252,6 +264,53 @@ struct NowPlayingWidget: View {
         }
         .padding(.horizontal, 16)
         .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var artworkPlaceholder: some View {
+        RoundedRectangle(cornerRadius: 12)
+            .fill(
+                LinearGradient(
+                    colors: [appearance.color, .blue, .purple],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+            )
+            .overlay(
+                Image(systemName: "music.note")
+                    .font(.system(size: 30))
+                    .foregroundStyle(.white.opacity(0.8))
+            )
+    }
+
+    private var sourceBadgeIcon: NSImage {
+        switch service.info.appName {
+        case "Spotify":
+            return iconForApp(bundleIdentifier: "com.spotify.client", fallbackSystemName: "music.note")
+        case "Music":
+            return iconForApp(bundleIdentifier: "com.apple.Music", fallbackSystemName: "music.note")
+        default:
+            return iconForApp(bundleIdentifier: Bundle.main.bundleIdentifier ?? "", fallbackSystemName: "app")
+        }
+    }
+
+    private func iconForApp(bundleIdentifier: String, fallbackSystemName: String) -> NSImage {
+        if let runningIcon = NSRunningApplication.runningApplications(withBundleIdentifier: bundleIdentifier).first?.icon {
+            runningIcon.size = NSSize(width: 64, height: 64)
+            return runningIcon
+        }
+
+        if let appURL = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleIdentifier) {
+            let appIcon = NSWorkspace.shared.icon(forFile: appURL.path)
+            appIcon.size = NSSize(width: 64, height: 64)
+            return appIcon
+        }
+
+        if let symbolIcon = NSImage(systemSymbolName: fallbackSystemName, accessibilityDescription: nil) {
+            symbolIcon.size = NSSize(width: 64, height: 64)
+            return symbolIcon
+        }
+
+        return NSImage(size: NSSize(width: 64, height: 64))
     }
 
 }
