@@ -4,42 +4,65 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OpenNotch Settings</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Sora:wght@600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
-    <div class="app">
-        <header class="header">
-            <div class="header-icon">
-                <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-                    <rect x="2" y="2" width="24" height="8" rx="4" fill="url(#grad)"/>
-                    <defs><linearGradient id="grad" x1="0" y1="0" x2="28" y2="8">
-                        <stop offset="0%" stop-color="#007AFF"/>
-                        <stop offset="100%" stop-color="#5856D6"/>
-                    </linearGradient></defs>
-                </svg>
-            </div>
-            <div>
-                <h1>OpenNotch</h1>
-                <p class="subtitle">Settings</p>
+    <div class="page-glow page-glow-a" aria-hidden="true"></div>
+    <div class="page-glow page-glow-b" aria-hidden="true"></div>
+
+    <main class="app" role="main">
+        <header class="hero-card">
+            <div class="hero-brand">
+                <div class="header-icon" aria-hidden="true">
+                    <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+                        <rect x="2" y="3" width="24" height="8" rx="4" fill="url(#grad)"/>
+                        <rect x="7" y="17" width="14" height="8" rx="4" fill="url(#grad2)" opacity="0.9"/>
+                        <defs>
+                            <linearGradient id="grad" x1="0" y1="0" x2="28" y2="10">
+                                <stop offset="0%" stop-color="#0A84FF"/>
+                                <stop offset="100%" stop-color="#5E5CE6"/>
+                            </linearGradient>
+                            <linearGradient id="grad2" x1="7" y1="17" x2="21" y2="25">
+                                <stop offset="0%" stop-color="#30B0C7"/>
+                                <stop offset="100%" stop-color="#64D2FF"/>
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                </div>
+                <div>
+                    <h1>OpenNotch</h1>
+                    <p class="subtitle">Settings Studio</p>
+                </div>
             </div>
         </header>
 
-        <!-- Widgets Section -->
-        <section class="section">
+        <section class="section panel-card" aria-labelledby="widgets-heading">
             <h2>
-                <span class="section-icon">⚡</span>
+                <span class="section-icon" aria-hidden="true">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                        <path d="M13 2L4 14H11L9 22L20 9H13L13 2Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+                    </svg>
+                </span>
                 Widgets
             </h2>
+            <p id="widgets-heading" class="sr-only">Widgets</p>
             <p class="section-desc">Toggle and reorder your notch widgets. Drag to reorder.</p>
             <div id="widget-list" class="widget-list"></div>
         </section>
 
-        <!-- Appearance Section -->
-        <section class="section">
+        <section class="section panel-card" aria-labelledby="appearance-heading">
             <h2>
-                <span class="section-icon">🎨</span>
+                <span class="section-icon" aria-hidden="true">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                        <path d="M12 3C7.03 3 3 7.03 3 12C3 16.97 7.03 21 12 21C13.66 21 15 19.66 15 18C15 17.21 14.68 16.5 14.17 16C13.86 15.69 13.86 15.19 14.17 14.88C14.68 14.37 15.39 14.05 16.18 14.05H18C19.66 14.05 21 12.71 21 11.05C21 6.6 16.97 3 12 3Z" stroke="currentColor" stroke-width="1.8"/>
+                    </svg>
+                </span>
                 Appearance
             </h2>
+            <p id="appearance-heading" class="sr-only">Appearance</p>
             <div class="form-grid">
                 <div class="form-group">
                     <label for="accentColor">Accent Color</label>
@@ -69,24 +92,29 @@
             </div>
         </section>
 
-        <!-- About Section -->
-        <section class="section about-section">
+        <section class="section panel-card about-section" aria-labelledby="about-heading">
             <h2>
-                <span class="section-icon">ℹ️</span>
+                <span class="section-icon" aria-hidden="true">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                        <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/>
+                        <path d="M12 10V16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                        <circle cx="12" cy="7.3" r="1" fill="currentColor"/>
+                    </svg>
+                </span>
                 About
             </h2>
+            <p id="about-heading" class="sr-only">About</p>
             <div class="about-content">
                 <p><strong>OpenNotch</strong> v1.0.0</p>
-                <p class="muted">A macOS notch widget hub. Inspired by <a href="https://github.com/adamlyttleapps/notchy" target="_blank">Notchy</a>.</p>
                 <p class="muted">Settings are saved to <code>~/Library/Application Support/OpenNotch/config.json</code></p>
             </div>
         </section>
 
         <div id="save-indicator" class="save-indicator">
             <span class="save-dot"></span>
-            Saved — changes apply instantly
+            Saved - changes apply instantly
         </div>
-    </div>
+    </main>
 
     <script src="/app.js"></script>
 </body>

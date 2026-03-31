@@ -55,6 +55,19 @@ function renderWidgets() {
 
     const sorted = [...config.widgets].sort((a, b) => a.order - b.order);
 
+    if (!sorted.length) {
+        const empty = document.createElement('div');
+        empty.className = 'widget-item';
+        empty.innerHTML = `
+            <div class="widget-info">
+                <div class="widget-name">No widgets configured</div>
+                <div class="widget-id">Enable widgets in your config to populate this list.</div>
+            </div>
+        `;
+        list.appendChild(empty);
+        return;
+    }
+
     sorted.forEach((widget, index) => {
         const item = document.createElement('div');
         item.className = 'widget-item';
@@ -168,6 +181,7 @@ function bindAppearanceControls() {
 
     // Set initial values
     accentColor.value = config.appearance.accentColor;
+    applyAccentColor(config.appearance.accentColor);
     fontSize.value = config.appearance.fontSize;
     fontSizeValue.textContent = config.appearance.fontSize;
     bgOpacity.value = config.appearance.backgroundOpacity;
@@ -177,6 +191,7 @@ function bindAppearanceControls() {
     // Bind change events
     accentColor.addEventListener('input', (e) => {
         config.appearance.accentColor = e.target.value;
+        applyAccentColor(e.target.value);
         debouncedSave();
     });
 
@@ -198,6 +213,23 @@ function bindAppearanceControls() {
         config.appearance.enableHoverToOpen = e.target.checked;
         debouncedSave();
     });
+}
+
+function applyAccentColor(color) {
+    if (!color) return;
+    document.documentElement.style.setProperty('--accent', color);
+    const soft = hexToRgba(color, 0.15);
+    document.documentElement.style.setProperty('--accent-soft', soft);
+}
+
+function hexToRgba(hex, alpha) {
+    const safeHex = hex.replace('#', '').trim();
+    if (safeHex.length !== 6) return `rgba(10, 132, 255, ${alpha})`;
+    const r = parseInt(safeHex.slice(0, 2), 16);
+    const g = parseInt(safeHex.slice(2, 4), 16);
+    const b = parseInt(safeHex.slice(4, 6), 16);
+    if ([r, g, b].some(Number.isNaN)) return `rgba(10, 132, 255, ${alpha})`;
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
 // ── Save Indicator ────────────────────────
