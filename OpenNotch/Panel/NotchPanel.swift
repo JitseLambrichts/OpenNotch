@@ -14,7 +14,7 @@ class NotchPanelController: NSObject {
     private var configManager: ConfigManager?
 
     private var hostingView: NSHostingView<PanelContentView>?
-    private var visualEffectView: NSVisualEffectView?
+    private var backgroundContainerView: NSView?
 
     private var expandedFrame: CGRect = .zero
     private var collapsedFrame: CGRect = .zero
@@ -24,17 +24,19 @@ class NotchPanelController: NSObject {
         self.configManager = configManager
 
         let notchRect = screen.notchRect
+        let notchH = notchRect.height > 0 ? notchRect.height : 32
+
         let collapsed = CGRect(
             x: notchRect.midX - 60,
-            y: notchRect.minY,
+            y: notchRect.maxY - notchH,
             width: 120,
-            height: 1
+            height: notchH
         )
 
         self.collapsedFrame = collapsed
         self.expandedFrame = CGRect(
             x: notchRect.midX - panelWidth / 2,
-            y: notchRect.minY - panelHeight,
+            y: notchRect.maxY - panelHeight,
             width: panelWidth,
             height: panelHeight
         )
@@ -45,7 +47,7 @@ class NotchPanelController: NSObject {
             backing: .buffered,
             defer: false
         )
-        panel.level = .floating
+        panel.level = .statusBar
         panel.isOpaque = false
         panel.backgroundColor = .clear
         panel.hasShadow = true
@@ -60,23 +62,22 @@ class NotchPanelController: NSObject {
 
     private func setupContent() {
         guard let configManager = configManager else { return }
-        
-        let effectView = NSVisualEffectView(frame: NSRect(origin: .zero, size: expandedFrame.size))
-        effectView.material = .hudWindow
-        effectView.state = .active
-        effectView.blendingMode = .behindWindow
-        effectView.wantsLayer = true
-        effectView.layer?.cornerRadius = cornerRadius
-        effectView.layer?.masksToBounds = true
-        self.visualEffectView = effectView
 
-        let contentView = PanelContentView(configManager: configManager)
+        let containerView = NSView(frame: NSRect(origin: .zero, size: expandedFrame.size))
+        containerView.wantsLayer = true
+        containerView.layer?.backgroundColor = NSColor.black.cgColor
+        containerView.layer?.cornerRadius = cornerRadius
+        containerView.layer?.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner]
+        containerView.layer?.masksToBounds = true
+        self.backgroundContainerView = containerView
+
+        let contentView = PanelContentView(configManager: configManager, topPadding: 0)
         let hosting = NSHostingView(rootView: contentView)
         hosting.frame = NSRect(origin: .zero, size: expandedFrame.size)
         hosting.autoresizingMask = [.width, .height]
 
-        effectView.addSubview(hosting)
-        panel.contentView = effectView
+        containerView.addSubview(hosting)
+        panel.contentView = containerView
         self.hostingView = hosting
     }
 

@@ -3,6 +3,7 @@ import SwiftUI
 /// Root SwiftUI view inside the NotchPanel. Composes widgets based on config.
 struct PanelContentView: View {
     @Bindable var configManager: ConfigManager
+    var topPadding: CGFloat = 0
 
     var body: some View {
         VStack(spacing: 0) {
@@ -65,6 +66,7 @@ struct PanelContentView: View {
             .padding(.horizontal, 12)
             .padding(.bottom, 24)
         }
+        .padding(.top, topPadding)
         .environment(\.appearance, configManager.config.appearance)
     }
 

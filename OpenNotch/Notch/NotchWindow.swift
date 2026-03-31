@@ -28,7 +28,7 @@ class NotchWindowController: NSObject {
             backing: .buffered,
             defer: false
         )
-        panel.level = .mainMenu
+        panel.level = .statusBar
         panel.isOpaque = false
         panel.backgroundColor = .clear
         panel.hasShadow = false
