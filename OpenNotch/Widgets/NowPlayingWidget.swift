@@ -185,85 +185,94 @@ struct NowPlayingWidget: View {
     @State private var service = NowPlayingService.shared
 
     var body: some View {
-        HStack(spacing: 16) {
+        HStack(alignment: .center) {
             if service.info.isEmpty {
                 // No media playing
                 Label("No media playing", systemImage: "music.note")
                     .font(appearance.font(size: 13, weight: .medium))
                     .foregroundStyle(.white.opacity(0.4))
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .frame(maxWidth: .infinity)
             } else {
-                // Album Art
-                ZStack(alignment: .bottomTrailing) {
-                    Group {
-                        if let artwork = URL(string: service.info.artworkURL), !service.info.artworkURL.isEmpty {
-                            AsyncImage(url: artwork) { phase in
-                                switch phase {
-                                case .success(let image):
-                                    image
-                                        .resizable()
-                                        .scaledToFill()
-                                default:
-                                    artworkPlaceholder
+                // Main content: Vertically stacked (Album → Title/Artist → Controls)
+                VStack(alignment: .center, spacing: 10) {
+                    // Album Art with badge
+                    ZStack(alignment: .bottomTrailing) {
+                        Group {
+                            if let artwork = URL(string: service.info.artworkURL), !service.info.artworkURL.isEmpty {
+                                AsyncImage(url: artwork) { phase in
+                                    switch phase {
+                                    case .success(let image):
+                                        image
+                                            .resizable()
+                                            .scaledToFill()
+                                    default:
+                                        artworkPlaceholder
+                                    }
                                 }
+                            } else {
+                                artworkPlaceholder
                             }
-                        } else {
-                            artworkPlaceholder
                         }
+                        .frame(width: 80, height: 80)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+
+                        Image(nsImage: sourceBadgeIcon)
+                            .resizable()
+                            .scaledToFill()
+                            .frame(width: 18, height: 18)
+                            .clipShape(Circle())
+                            .overlay(
+                                Circle().stroke(Color.white.opacity(0.35), lineWidth: 1)
+                            )
+                            .padding(4)
                     }
-                    .frame(width: 80, height: 80)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
 
-                    Image(nsImage: sourceBadgeIcon)
-                        .resizable()
-                        .scaledToFill()
-                        .frame(width: 18, height: 18)
-                        .clipShape(Circle())
-                        .overlay(
-                            Circle().stroke(Color.white.opacity(0.35), lineWidth: 1)
-                        )
-                        .padding(4)
-                }
-
-                VStack(alignment: .leading, spacing: 8) {
-                    VStack(alignment: .leading, spacing: 1) {
+                    // Track Info (Title + Artist)
+                    VStack(alignment: .center, spacing: 4) {
                         Text(service.info.trackName)
-                            .font(appearance.font(size: 15, weight: .bold))
+                            .font(appearance.font(size: 13, weight: .bold))
                             .foregroundStyle(.white)
                             .lineLimit(1)
 
                         Text(service.info.artistName)
-                            .font(appearance.font(size: 13))
+                            .font(appearance.font(size: 11))
                             .foregroundStyle(.white.opacity(0.6))
                             .lineLimit(1)
                     }
+                    .frame(maxWidth: .infinity, alignment: .center)
 
-                    // Playback controls (Compact)
-                    HStack(spacing: 16) {
+                    // Playback controls (Beneath the album art and info)
+                    HStack(spacing: 12) {
+                        Spacer()
+                        
                         Button(action: { service.previousTrack() }) {
                             Image(systemName: "backward.fill")
-                                .font(.system(size: 14))
+                                .font(.system(size: 12))
                         }
                         .buttonStyle(.plain)
 
                         Button(action: { service.togglePlayPause() }) {
                             Image(systemName: service.info.isPlaying ? "pause.fill" : "play.fill")
-                                .font(.system(size: 18))
+                                .font(.system(size: 16))
                         }
                         .buttonStyle(.plain)
 
                         Button(action: { service.nextTrack() }) {
                             Image(systemName: "forward.fill")
-                                .font(.system(size: 14))
+                                .font(.system(size: 12))
                         }
                         .buttonStyle(.plain)
+
+                        Spacer()
                     }
                     .foregroundStyle(.white)
+                    .padding(.top, 2)
+                    .padding(.bottom, 5)
                 }
             }
         }
         .padding(.horizontal, 16)
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
     }
 
     private var artworkPlaceholder: some View {

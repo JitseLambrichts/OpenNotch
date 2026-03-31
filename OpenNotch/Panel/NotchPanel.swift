@@ -6,7 +6,7 @@ import SwiftUI
 class NotchPanelController: NSObject {
 
     private let panelWidth: CGFloat = 640
-    private let panelHeight: CGFloat = 180
+    private let panelHeight: CGFloat = 210
     private let cornerRadius: CGFloat = 32
     private(set) var panel: NSPanel!
 

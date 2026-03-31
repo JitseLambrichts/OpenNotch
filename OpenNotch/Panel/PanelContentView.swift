@@ -25,10 +25,10 @@ struct PanelContentView: View {
             .padding(.bottom, 12)
 
             // Widgets Area (Horizontal)
-            HStack(alignment: .top, spacing: 0) {
+            HStack(alignment: .center, spacing: 0) {
                 ForEach(Array(orderedEnabledWidgets.enumerated()), id: \.element.id) { index, widget in
                     WidgetContainerView(widgetConfig: widget)
-                        .frame(maxWidth: .infinity)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
 
                     if index < orderedEnabledWidgets.count - 1 {
                         Divider()
@@ -39,7 +39,7 @@ struct PanelContentView: View {
                 }
             }
             .padding(.horizontal, 12)
-            .padding(.bottom, 24)
+            .padding(.bottom, 36)
         }
         .padding(.top, topPadding)
         .environment(\.appearance, configManager.config.appearance)
