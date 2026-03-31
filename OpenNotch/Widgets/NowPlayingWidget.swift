@@ -10,12 +10,37 @@ struct NowPlayingInfo: Equatable {
     var artistName: String = ""
     var albumName: String = ""
     var artworkURL: String = ""
+    var url: String = "" // Added to store browser URL
     var isPlaying: Bool = false
     var appName: String = ""
     var appBundleID: String = ""
 
     var isEmpty: Bool {
         trackName.isEmpty && artistName.isEmpty
+    }
+
+    // Helper to resolve artwork, including YouTube thumbnails
+    var resolvedArtworkURL: String {
+        if !artworkURL.isEmpty { return artworkURL }
+
+        // YouTube Thumbnail Extraction
+        if url.contains("youtube.com") || url.contains("youtu.be") {
+            if let videoID = extractYouTubeID(from: url) {
+                return "https://img.youtube.com/vi/\(videoID)/mqdefault.jpg"
+            }
+        }
+        return ""
+    }
+
+    private func extractYouTubeID(from url: String) -> String? {
+        if let range = url.range(of: "v=") {
+            let id = url[range.upperBound...].prefix(11)
+            return id.count == 11 ? String(id) : nil
+        } else if let range = url.range(of: "youtu.be/") {
+            let id = url[range.upperBound...].prefix(11)
+            return id.count == 11 ? String(id) : nil
+        }
+        return nil
     }
 }
 
@@ -30,8 +55,23 @@ final class NowPlayingService {
     private var timer: Timer?
     private let mediaRemote = MediaRemoteBridge()
 
+    private var lastUserToggleTime: Date = .distantPast
+
     private init() {
         startPolling()
+        setupNotifications()
+    }
+
+    private func setupNotifications() {
+        let nc = NotificationCenter.default
+        // Standard MediaRemote notifications (via DistributedNotificationCenter usually,
+        // but MediaRemoteBridge handles the internal registration)
+        nc.addObserver(forName: NSNotification.Name("kMRMediaRemoteNowPlayingInfoDidChangeNotification"), object: nil, queue: .main) { [weak self] _ in
+            self?.fetchNowPlaying()
+        }
+        nc.addObserver(forName: NSNotification.Name("kMRNowPlayingApplicationIsPlayingDidChangeNotification"), object: nil, queue: .main) { [weak self] _ in
+            self?.fetchNowPlaying()
+        }
     }
 
     func startPolling() {
@@ -49,32 +89,55 @@ final class NowPlayingService {
     }
 
     private func fetchNowPlaying() {
-        mediaRemote.queryNowPlaying { [weak self] systemInfo in
-            if let systemInfo {
-                DispatchQueue.main.async { self?.info = systemInfo }
+        DispatchQueue.global(qos: .utility).async {
+            let browserInfo = self.queryRunningBrowsers()
+
+            if var info = browserInfo {
+                // Determine if we should honor the browser's "audible" claim.
+                // AppleScript `audible` is often delayed. If the user just toggled play/pause,
+                // we trust our local UI state for a longer window, or indefinitely until a new track starts.
+
+                // If the track changed, reset our internal knowledge.
+                if info.trackName != self.info.trackName {
+                    self.lastUserToggleTime = .distantPast
+                } else {
+                    // Track is the same. If the user recently toggled, trust the UI state.
+                    let timeSinceToggle = Date().timeIntervalSince(self.lastUserToggleTime)
+                    if timeSinceToggle < 5.0 {
+                        // Trust UI for 5 seconds to let `audible` catch up
+                        info.isPlaying = self.info.isPlaying
+                    } else if timeSinceToggle < 86400 {
+                        // If they toggled it manually in this session, keep relying on our internal state
+                        // rather than letting the delayed 'audible' flag flip it back incorrectly.
+                        info.isPlaying = self.info.isPlaying
+                    }
+                }
+
+                DispatchQueue.main.async { self.info = info }
                 return
             }
 
-            DispatchQueue.global(qos: .utility).async {
-                guard let self else { return }
-
-                // Check browsers first
-                if let browserInfo = self.queryRunningBrowsers() {
-                    DispatchQueue.main.async { self.info = browserInfo }
-                    return
+            // Fallback for specific apps if they are running
+            if let musicInfo = self.queryApp(named: "Music", bundleID: "com.apple.Music") {
+                var info = musicInfo
+                if info.trackName == self.info.trackName && Date().timeIntervalSince(self.lastUserToggleTime) < 5.0 {
+                    info.isPlaying = self.info.isPlaying
                 }
-
-                // Fallback for environments where MediaRemote returns no active item.
-                if let musicInfo = self.queryApp(named: "Music", bundleID: "com.apple.Music") {
-                    DispatchQueue.main.async { self.info = musicInfo }
-                    return
-                }
-                if let spotifyInfo = self.queryApp(named: "Spotify", bundleID: "com.spotify.client") {
-                    DispatchQueue.main.async { self.info = spotifyInfo }
-                    return
-                }
-                DispatchQueue.main.async { self.info = NowPlayingInfo() }
+                DispatchQueue.main.async { self.info = info }
+                return
             }
+
+            if let spotifyInfo = self.queryApp(named: "Spotify", bundleID: "com.spotify.client") {
+                var info = spotifyInfo
+                if info.trackName == self.info.trackName && Date().timeIntervalSince(self.lastUserToggleTime) < 5.0 {
+                    info.isPlaying = self.info.isPlaying
+                }
+                DispatchQueue.main.async { self.info = info }
+                return
+            }
+
+            // Clear state if nothing is found
+            DispatchQueue.main.async { self.info = NowPlayingInfo() }
         }
     }
 
@@ -185,7 +248,13 @@ final class NowPlayingService {
                     set tabURL to URL of t
                     if tabURL contains "youtube.com" or tabURL contains "music.apple.com" or tabURL contains "spotify.com" or tabURL contains "soundcloud.com" then
                         set tabTitle to title of t
-                        return tabTitle & "|||" & tabURL
+                        set isTabAudible to "false"
+                        try
+                            if audible of t is true then
+                                set isTabAudible to "true"
+                            end if
+                        end try
+                        return tabTitle & "|||" & tabURL & "|||" & isTabAudible
                     end if
                 end repeat
             end repeat
@@ -196,20 +265,14 @@ final class NowPlayingService {
     }
 
     private func queryWebKitBrowser(named name: String, bundleID: String) -> NowPlayingInfo? {
-        // Safari requires checking 'do JavaScript' or relies solely on MediaRemote.
-        // We'll try a basic AppleScript approach, but MediaRemote usually handles Safari well natively.
-        // For Orion (kagi), it behaves similarly to Safari.
         let script = """
         tell application "\(name)"
             if (count of windows) > 0 then
-                return (name of current tab of front window) & "|||" & (URL of current tab of front window)
+                return (name of current tab of front window) & "|||" & (URL of current tab of front window) & "|||true"
             end if
         end tell
         return "|||"
         """
-        // Note: Without robust "audible" detection in basic AppleScript for Safari,
-        // this fallback might just grab the frontmost tab.
-        // It's safer to rely on MediaRemote for Safari, but we provide this as a last-resort fallback.
         return executeBrowserScript(script: script, name: name, bundleID: bundleID)
     }
 
@@ -224,6 +287,10 @@ final class NowPlayingService {
 
         let rawTitle = parts[0].trimmingCharacters(in: .whitespacesAndNewlines)
         let pageURL = parts[1].trimmingCharacters(in: .whitespacesAndNewlines)
+
+        let isAudibleStr = parts.count >= 3 ? parts[2].trimmingCharacters(in: .whitespacesAndNewlines) : "true"
+        let isPlaying = (isAudibleStr == "true")
+
         guard !rawTitle.isEmpty else { return nil }
 
         let title = normalizeBrowserTrackTitle(rawTitle)
@@ -234,7 +301,8 @@ final class NowPlayingService {
             artistName: artist,
             albumName: "",
             artworkURL: "",
-            isPlaying: true, // We assume it's playing if it's audible
+            url: pageURL, // Store the URL for thumbnail extraction
+            isPlaying: isPlaying,
             appName: name,
             appBundleID: bundleID
         )
@@ -266,11 +334,14 @@ final class NowPlayingService {
     // MARK: – Playback Controls
 
     func togglePlayPause() {
+        // Optimistic UI update
+        info.isPlaying.toggle()
+        lastUserToggleTime = Date()
+
         mediaRemote.sendCommand(.togglePlayPause)
-        // Refresh immediately
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
-            self?.fetchNowPlaying()
-        }
+
+        // Don't auto-fetch immediately because the system state might lag behind
+        // Let the system notifications trigger the next sync naturally
     }
 
     func nextTrack() {
@@ -421,8 +492,32 @@ private final class MediaRemoteBridge {
         }
 
         group.notify(queue: queue) {
+            let runningApp = pid.flatMap { NSRunningApplication(processIdentifier: $0) }
+            let appName = runningApp?.localizedName ?? ""
+            let bundleID = runningApp?.bundleIdentifier ?? ""
+
+            // Default to false unless proven otherwise
+            var actualIsPlaying = false
+
+            // 1. Trust getNowPlayingIsPlayingFn first
+            if let isPlaying {
+                actualIsPlaying = isPlaying
+            }
+            // 2. If it's nil, check the playback rate from the info dictionary
+            else if let infoDict {
+                let playbackRate = self.doubleValue(
+                    from: infoDict,
+                    keys: [
+                        self.playbackRateKey,
+                        "playbackRate"
+                    ]
+                )
+                actualIsPlaying = (playbackRate > 0.0)
+            }
+
             guard let infoDict else {
-                completion(nil)
+                // If dictionary is entirely nil, return what we have (often means paused/stopped)
+                completion(NowPlayingInfo(isPlaying: actualIsPlaying, appName: appName, appBundleID: bundleID))
                 return
             }
 
@@ -452,21 +547,10 @@ private final class MediaRemoteBridge {
             )
 
             if track.isEmpty && artist.isEmpty {
-                completion(nil)
+                // If it's playing but has no metadata, still pass it back so we know the state.
+                completion(NowPlayingInfo(isPlaying: actualIsPlaying, appName: appName, appBundleID: bundleID))
                 return
             }
-
-            let playbackRate = self.doubleValue(
-                from: infoDict,
-                keys: [
-                    self.playbackRateKey,
-                    "playbackRate"
-                ]
-            )
-
-            let runningApp = pid.flatMap { NSRunningApplication(processIdentifier: $0) }
-            let appName = runningApp?.localizedName ?? ""
-            let bundleID = runningApp?.bundleIdentifier ?? ""
 
             completion(
                 NowPlayingInfo(
@@ -474,7 +558,7 @@ private final class MediaRemoteBridge {
                     artistName: artist,
                     albumName: album,
                     artworkURL: "",
-                    isPlaying: isPlaying ?? (playbackRate > 0),
+                    isPlaying: actualIsPlaying,
                     appName: appName,
                     appBundleID: bundleID
                 )
@@ -535,7 +619,7 @@ struct NowPlayingWidget: View {
                     // Album Art with badge
                     ZStack(alignment: .bottomTrailing) {
                         Group {
-                            if let artwork = URL(string: service.info.artworkURL), !service.info.artworkURL.isEmpty {
+                            if let artwork = URL(string: service.info.resolvedArtworkURL), !service.info.resolvedArtworkURL.isEmpty {
                                 AsyncImage(url: artwork) { phase in
                                     switch phase {
                                     case .success(let image):
