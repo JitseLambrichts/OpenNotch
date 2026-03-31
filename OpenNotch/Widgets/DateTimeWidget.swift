@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Live date and time widget with second-precise updates.
+/// Month title with a 7-day current-week calendar strip.
 struct DateTimeWidget: View {
     @Environment(\.appearance) private var appearance
 
@@ -9,36 +9,58 @@ struct DateTimeWidget: View {
             let now = Date()
             let calendar = Calendar.current
             let month = now.formatted(.dateTime.month(.wide).year())
+            let weekDates = currentWeekDates(from: now, calendar: calendar)
             
             Text(month)
                 .font(appearance.font(size: 24, weight: .bold))
                 .foregroundStyle(.white)
             
-            HStack(spacing: 8) {
-                ForEach(-3..<4) { offset in
-                    let date = calendar.date(byAdding: .day, value: offset, to: now) ?? now
+            HStack(spacing: 6) {
+                ForEach(weekDates, id: \.self) { date in
                     let dayNum = calendar.component(.day, from: date)
-                    let isToday = offset == 0
-                    
-                    VStack(spacing: 4) {
-                        if isToday {
-                            Text(String(format: "%02d", dayNum))
-                                .font(appearance.font(size: 16, weight: .bold, design: .rounded))
-                                .foregroundStyle(appearance.color)
-                                .padding(8)
-                                .background(RoundedRectangle(cornerRadius: 8).fill(appearance.color.opacity(0.1)))
-                        } else {
-                            Text(String(format: "%02d", dayNum))
-                                .font(appearance.font(size: 16, weight: .medium, design: .rounded))
-                                .foregroundStyle(.white.opacity(offset < 0 ? 0.3 : 0.6))
-                                .padding(8)
-                        }
+                    let isToday = calendar.isDateInToday(date)
+
+                    VStack(spacing: 6) {
+                        Text(weekdayLetter(for: date))
+                            .font(appearance.font(size: 11, weight: .semibold, design: .rounded))
+                            .foregroundStyle(.white.opacity(isToday ? 0.95 : 0.45))
+
+                        Text(String(format: "%02d", dayNum))
+                            .font(appearance.font(size: 15, weight: isToday ? .bold : .medium, design: .rounded))
+                            .foregroundStyle(isToday ? appearance.color : .white.opacity(0.7))
+                            .frame(width: 30, height: 30)
+                            .background(
+                                Capsule(style: .continuous)
+                                    .fill(isToday ? appearance.color.opacity(0.16) : Color.white.opacity(0.04))
+                            )
                     }
+                    .frame(maxWidth: .infinity)
                 }
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, 16)
     }
+
+    private func currentWeekDates(from referenceDate: Date, calendar: Calendar) -> [Date] {
+        guard let startOfWeek = calendar.dateInterval(of: .weekOfYear, for: referenceDate)?.start else {
+            return [referenceDate]
+        }
+
+        return (0..<7).compactMap { offset in
+            calendar.date(byAdding: .day, value: offset, to: startOfWeek)
+        }
+    }
+
+    private func weekdayLetter(for date: Date) -> String {
+        Self.weekdayFormatter.string(from: date)
+    }
+
+    private static let weekdayFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.locale = .current
+        formatter.setLocalizedDateFormatFromTemplate("EEEEE")
+        return formatter
+    }()
 
 }
