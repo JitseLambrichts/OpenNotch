@@ -98,6 +98,7 @@ graph TD;
 ## 🧹 Uninstall
 
 ```bash
+pkill -x OpenNotch
 launchctl unload ~/Library/LaunchAgents/com.opennotch.app.plist
 rm -rf /Applications/OpenNotch.app
 rm ~/Library/LaunchAgents/com.opennotch.app.plist
