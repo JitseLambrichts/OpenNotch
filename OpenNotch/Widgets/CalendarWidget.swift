@@ -8,7 +8,14 @@ final class CalendarService {
 
     static let shared = CalendarService()
 
-    private let store = EKEventStore()
+    private var _store: EKEventStore?
+    private var store: EKEventStore {
+        if let s = _store { return s }
+        let s = EKEventStore()
+        _store = s
+        return s
+    }
+
     private(set) var upcomingEvents: [CalendarEvent] = []
     private(set) var accessGranted = false
     private var timer: Timer?
@@ -24,7 +31,37 @@ final class CalendarService {
     }
 
     private init() {
-        requestAccess()
+        checkAuthorizationStatus()
+    }
+
+    func checkAuthorizationStatus() {
+        let status = EKEventStore.authorizationStatus(for: .event)
+        NSLog("[CalendarService] Current authorization status: \(status.rawValue)")
+        
+        let previouslyGranted = accessGranted
+        switch status {
+        case .authorized, .fullAccess:
+            self.accessGranted = true
+        case .notDetermined:
+            self.accessGranted = false
+            requestAccess()
+        case .denied, .restricted:
+            self.accessGranted = false
+        case .writeOnly:
+            // For now, we only care about read (full) access for widget
+            self.accessGranted = false
+        @unknown default:
+            self.accessGranted = false
+        }
+        
+        // Recreate store if permission was just granted to avoid state issues
+        if accessGranted && !previouslyGranted {
+            _store = EKEventStore()
+            fetchEvents()
+            startAutoRefresh()
+        } else if accessGranted {
+            fetchEvents()
+        }
     }
 
     func requestAccess() {
@@ -124,10 +161,15 @@ struct CalendarWidget: View {
             }
 
             if !service.accessGranted {
-                Text("Calendar access not granted. Please allow in System Settings → Privacy → Calendars.")
-                    .font(appearance.font(size: 11))
-                    .foregroundStyle(.white.opacity(0.4))
-                    .multilineTextAlignment(.leading)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Calendar access not granted.")
+                        .font(appearance.font(size: 12, weight: .semibold))
+                        .foregroundStyle(.white)
+                    Text("Status: \(statusDesc). Please allow in System Settings → Privacy → Calendars.")
+                        .font(appearance.font(size: 11))
+                        .foregroundStyle(.white.opacity(0.4))
+                        .multilineTextAlignment(.leading)
+                }
             } else if service.upcomingEvents.isEmpty {
                 Text("No upcoming events today")
                     .font(appearance.font(size: 12))
@@ -140,7 +182,21 @@ struct CalendarWidget: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .onAppear {
+            service.checkAuthorizationStatus()
             service.fetchEvents()
+        }
+    }
+
+    private var statusDesc: String {
+        let status = EKEventStore.authorizationStatus(for: .event)
+        switch status {
+        case .notDetermined: return "Not Determined"
+        case .denied: return "Denied"
+        case .restricted: return "Restricted"
+        case .authorized: return "Authorized"
+        case .fullAccess: return "Full Access"
+        case .writeOnly: return "Write Only"
+        @unknown default: return "Unknown"
         }
     }
 }
