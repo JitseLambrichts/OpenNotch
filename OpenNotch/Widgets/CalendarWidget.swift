@@ -149,38 +149,42 @@ struct CalendarWidget: View {
     @State private var service = CalendarService.shared
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Image(systemName: "calendar")
-                    .font(appearance.font(size: 14))
-                    .foregroundStyle(appearance.color)
-                Text("Upcoming")
-                    .font(appearance.font(size: 13, weight: .semibold))
-                    .foregroundStyle(.white.opacity(0.8))
-                Spacer()
-            }
-
+        VStack(alignment: .leading, spacing: 12) {
             if !service.accessGranted {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Calendar access not granted.")
-                        .font(appearance.font(size: 12, weight: .semibold))
-                        .foregroundStyle(.white)
-                    Text("Status: \(statusDesc). Please allow in System Settings → Privacy → Calendars.")
-                        .font(appearance.font(size: 11))
+                VStack(alignment: .center, spacing: 12) {
+                    Image(systemName: "calendar.badge.exclamationmark")
+                        .font(.system(size: 24))
                         .foregroundStyle(.white.opacity(0.4))
-                        .multilineTextAlignment(.leading)
+                    Text("Calendar access required")
+                        .font(appearance.font(size: 13, weight: .medium))
+                        .foregroundStyle(.white.opacity(0.6))
                 }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if service.upcomingEvents.isEmpty {
-                Text("No upcoming events today")
-                    .font(appearance.font(size: 12))
-                    .foregroundStyle(.white.opacity(0.4))
+                VStack(alignment: .center, spacing: 12) {
+                    Image(systemName: "calendar.badge.checkmark")
+                        .font(.system(size: 24))
+                        .foregroundStyle(.white.opacity(0.2))
+                    Text("Nothing for today")
+                        .font(appearance.font(size: 14, weight: .medium))
+                        .foregroundStyle(.white.opacity(0.4))
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
-                ForEach(service.upcomingEvents) { event in
-                    EventRow(event: event)
+                Text("TODAY")
+                    .font(appearance.font(size: 11, weight: .bold))
+                    .foregroundStyle(.white.opacity(0.3))
+                
+                VStack(spacing: 12) {
+                    ForEach(service.upcomingEvents) { event in
+                        EventRow(event: event)
+                    }
                 }
             }
         }
+        .padding(.horizontal, 16)
         .frame(maxWidth: .infinity, alignment: .leading)
+
         .onAppear {
             service.checkAuthorizationStatus()
             service.fetchEvents()
@@ -216,18 +220,18 @@ private struct EventRow: View {
 
             VStack(alignment: .leading, spacing: 1) {
                 Text(event.title)
-                    .font(appearance.font(size: 12, weight: .medium))
+                    .font(appearance.font(size: 12, weight: .semibold))
                     .foregroundStyle(.white)
                     .lineLimit(1)
 
                 if event.isAllDay {
                     Text("All day")
                         .font(appearance.font(size: 10))
-                        .foregroundStyle(.white.opacity(0.4))
+                        .foregroundStyle(.white.opacity(0.6))
                 } else {
                     Text(timeRange)
                         .font(appearance.font(size: 10, design: .monospaced))
-                        .foregroundStyle(.white.opacity(0.4))
+                        .foregroundStyle(.white.opacity(0.6))
                 }
             }
 

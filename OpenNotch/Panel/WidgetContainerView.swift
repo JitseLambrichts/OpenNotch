@@ -18,12 +18,5 @@ struct WidgetContainerView: View {
                 PlaceholderWidget(name: widgetConfig.id)
             }
         }
-        .padding(14)
-        .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(.ultraThinMaterial)
-                .opacity(appearance.backgroundOpacity)
-                .shadow(color: .black.opacity(0.15), radius: 4, x: 0, y: 2)
-        )
     }
 }

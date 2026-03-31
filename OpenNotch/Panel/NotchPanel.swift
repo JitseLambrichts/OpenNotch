@@ -5,9 +5,9 @@ import SwiftUI
 /// Uses a controller-based design to avoid NSPanel subclassing traps in Swift.
 class NotchPanelController: NSObject {
 
-    private let panelWidth: CGFloat = 420
-    private let panelHeight: CGFloat = 340
-    private let cornerRadius: CGFloat = 16
+    private let panelWidth: CGFloat = 640
+    private let panelHeight: CGFloat = 180
+    private let cornerRadius: CGFloat = 32
     private(set) var panel: NSPanel!
 
     private var targetScreen: NSScreen?

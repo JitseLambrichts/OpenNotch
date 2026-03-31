@@ -179,102 +179,79 @@ struct NowPlayingWidget: View {
     @State private var service = NowPlayingService.shared
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        HStack(spacing: 16) {
             if service.info.isEmpty {
                 // No media playing
-                HStack(spacing: 10) {
-                    Image(systemName: "music.note")
-                        .font(appearance.font(size: 20))
-                        .foregroundStyle(.gray)
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("No media playing")
-                            .font(appearance.font(size: 13, weight: .medium))
-                            .foregroundStyle(.white.opacity(0.5))
-                        Text("Open Music or Spotify to see playback info")
-                            .font(appearance.font(size: 11))
-                            .foregroundStyle(.white.opacity(0.3))
-                    }
-                }
+                Label("No media playing", systemImage: "music.note")
+                    .font(appearance.font(size: 13, weight: .medium))
+                    .foregroundStyle(.white.opacity(0.4))
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
-                // Track info
-                HStack(spacing: 12) {
-                    // Album art placeholder (gradient circle)
-                    ZStack {
-                        Circle()
-                            .fill(
-                                LinearGradient(
-                                    colors: [appearance.color, .blue, .cyan],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                )
+                // Album Art
+                ZStack(alignment: .bottomTrailing) {
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(
+                            LinearGradient(
+                                colors: [appearance.color, .blue, .purple],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
                             )
-                            .frame(width: 44, height: 44)
+                        )
+                        .frame(width: 80, height: 80)
+                        .overlay(
+                            Image(systemName: "music.note")
+                                .font(.system(size: 30))
+                                .foregroundStyle(.white.opacity(0.8))
+                        )
 
-                        Image(systemName: "music.note")
-                            .font(appearance.font(size: 18, weight: .medium))
-                            .foregroundStyle(.white)
-                    }
+                    // Source Mini Icon
+                    Image(systemName: service.info.appName == "Spotify" ? "record.circle.fill" : "apple.logo")
+                        .font(.system(size: 14))
+                        .foregroundStyle(.white)
+                        .padding(4)
+                        .background(Circle().fill(Color.red))
+                        .padding(2)
+                }
 
-                    VStack(alignment: .leading, spacing: 3) {
+                VStack(alignment: .leading, spacing: 8) {
+                    VStack(alignment: .leading, spacing: 1) {
                         Text(service.info.trackName)
-                            .font(appearance.font(size: 13, weight: .semibold))
+                            .font(appearance.font(size: 15, weight: .bold))
                             .foregroundStyle(.white)
                             .lineLimit(1)
 
                         Text(service.info.artistName)
-                            .font(appearance.font(size: 12))
+                            .font(appearance.font(size: 13))
                             .foregroundStyle(.white.opacity(0.6))
                             .lineLimit(1)
+                    }
 
-                        if !service.info.albumName.isEmpty {
-                            Text(service.info.albumName)
-                                .font(appearance.font(size: 11))
-                                .foregroundStyle(.white.opacity(0.4))
-                                .lineLimit(1)
+                    // Playback controls (Compact)
+                    HStack(spacing: 16) {
+                        Button(action: { service.previousTrack() }) {
+                            Image(systemName: "backward.fill")
+                                .font(.system(size: 14))
                         }
+                        .buttonStyle(.plain)
+
+                        Button(action: { service.togglePlayPause() }) {
+                            Image(systemName: service.info.isPlaying ? "pause.fill" : "play.fill")
+                                .font(.system(size: 18))
+                        }
+                        .buttonStyle(.plain)
+
+                        Button(action: { service.nextTrack() }) {
+                            Image(systemName: "forward.fill")
+                                .font(.system(size: 14))
+                        }
+                        .buttonStyle(.plain)
                     }
-
-                    Spacer()
-
-                    // Source indicator
-                    Text(service.info.appName)
-                        .font(appearance.font(size: 10, weight: .medium))
-                        .foregroundStyle(.white.opacity(0.3))
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
-                        .background(Capsule().fill(.white.opacity(0.08)))
+                    .foregroundStyle(.white)
                 }
-
-                // Playback controls
-                HStack(spacing: 20) {
-                    Spacer()
-
-                    Button(action: { service.previousTrack() }) {
-                        Image(systemName: "backward.fill")
-                            .font(appearance.font(size: 14))
-                            .foregroundStyle(.white.opacity(0.7))
-                    }
-                    .buttonStyle(.plain)
-
-                    Button(action: { service.togglePlayPause() }) {
-                        Image(systemName: service.info.isPlaying ? "pause.fill" : "play.fill")
-                            .font(appearance.font(size: 18))
-                            .foregroundStyle(appearance.color)
-                    }
-                    .buttonStyle(.plain)
-
-                    Button(action: { service.nextTrack() }) {
-                        Image(systemName: "forward.fill")
-                            .font(appearance.font(size: 14))
-                            .foregroundStyle(.white.opacity(0.7))
-                    }
-                    .buttonStyle(.plain)
-
-                    Spacer()
-                }
-                .padding(.top, 2)
             }
         }
+        .padding(.horizontal, 16)
         .frame(maxWidth: .infinity, alignment: .leading)
     }
+
 }

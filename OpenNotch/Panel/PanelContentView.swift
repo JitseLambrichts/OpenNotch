@@ -6,35 +6,70 @@ struct PanelContentView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            // Notch connector (rounded tab connecting to notch)
-            NotchConnectorShape()
-                .fill(Color.clear)
-                .frame(height: 12)
+            // Header Row (Nook, Tray, Settings)
+            HStack(spacing: 12) {
+                HStack(spacing: 12) {
+                    Label("Nook", systemImage: "flashlight.on.fill")
+                        .font(.system(size: 13, weight: .semibold))
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(Capsule().fill(Color.white.opacity(0.1)))
 
-            // Widget area
-            ScrollView(.vertical, showsIndicators: false) {
-                VStack(spacing: 12) {
-                    ForEach(sortedEnabledWidgets) { widgetConfig in
-                        WidgetContainerView(widgetConfig: widgetConfig)
-                            .transition(.asymmetric(
-                                insertion: .opacity.combined(with: .move(edge: .top)),
-                                removal: .opacity
-                            ))
-                    }
+                    Label("Tray", systemImage: "archivebox.fill")
+                        .font(.system(size: 13, weight: .semibold))
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
                 }
-                .padding(.horizontal, 16)
-                .padding(.top, 8)
-                .padding(.bottom, 16)
+                .foregroundStyle(.white)
+
+                Spacer()
+
+                Image(systemName: "gearshape.fill")
+                    .font(.system(size: 16))
+                    .foregroundStyle(.white.opacity(0.6))
             }
+            .padding(.horizontal, 24)
+            .padding(.top, 20)
+            .padding(.bottom, 12)
+
+            // Widgets Area (Horizontal)
+            HStack(alignment: .top, spacing: 0) {
+                // Now Playing (Left)
+                if let musicWidget = enabledWidget(id: "nowPlaying") {
+                    WidgetContainerView(widgetConfig: musicWidget)
+                        .frame(maxWidth: .infinity)
+                }
+
+                Divider()
+                    .frame(height: 100)
+                    .background(Color.white.opacity(0.05))
+                    .padding(.vertical, 10)
+
+                // Calendar (Center)
+                if let calendarWidget = enabledWidget(id: "calendar") {
+                    WidgetContainerView(widgetConfig: calendarWidget)
+                        .frame(maxWidth: .infinity)
+                }
+
+                Divider()
+                    .frame(height: 100)
+                    .background(Color.white.opacity(0.05))
+                    .padding(.vertical, 10)
+
+                // Date Time (Right)
+                if let dateTimeWidget = enabledWidget(id: "dateTime") {
+                    WidgetContainerView(widgetConfig: dateTimeWidget)
+                        .frame(maxWidth: .infinity)
+                }
+            }
+            .padding(.horizontal, 12)
+            .padding(.bottom, 24)
         }
         .environment(\.appearance, configManager.config.appearance)
-        .animation(.spring(response: 0.4, dampingFraction: 0.85), value: sortedEnabledWidgets.map(\.id))
     }
 
-    private var sortedEnabledWidgets: [WidgetConfig] {
-        configManager.config.widgets
-            .filter { $0.enabled }
-            .sorted { $0.order < $1.order }
+    private func enabledWidget(id: String) -> WidgetConfig? {
+        configManager.config.widgets.first(where: { $0.id == id && $0.enabled })
     }
 }
 
@@ -48,29 +83,5 @@ extension EnvironmentValues {
     var appearance: AppearanceConfig {
         get { self[AppearanceEnvironmentKey.self] }
         set { self[AppearanceEnvironmentKey.self] = newValue }
-    }
-}
-
-// MARK: – Notch Connector Shape
-
-struct NotchConnectorShape: Shape {
-    func path(in rect: CGRect) -> Path {
-        // Draws a subtle rounded tab that visually connects panel to notch
-        Path { p in
-            let w = rect.width
-            let h = rect.height
-            p.move(to: CGPoint(x: 0, y: h))
-            p.addLine(to: CGPoint(x: 0, y: h * 0.5))
-            p.addQuadCurve(
-                to: CGPoint(x: h * 0.5, y: 0),
-                control: CGPoint(x: 0, y: 0)
-            )
-            p.addLine(to: CGPoint(x: w - h * 0.5, y: 0))
-            p.addQuadCurve(
-                to: CGPoint(x: w, y: h * 0.5),
-                control: CGPoint(x: w, y: 0)
-            )
-            p.addLine(to: CGPoint(x: w, y: h))
-        }
     }
 }

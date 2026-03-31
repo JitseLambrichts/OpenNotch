@@ -91,17 +91,23 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func setupNotchWindow() {
         NSLog("[AppDelegate] Setting up notch detection...")
-        guard let screen = NSScreen.main else {
-            NSLog("[AppDelegate] No main screen found")
-            return
+        let allScreens = NSScreen.screens
+        NSLog("[AppDelegate] Detected \(allScreens.count) screens")
+        
+        for (i, s) in allScreens.enumerated() {
+            NSLog("[AppDelegate] Screen \(i): \(s.frame), Insets: \(s.safeAreaInsets), HasNotch: \(s.hasNotch)")
         }
-        NSLog("[AppDelegate] Detected screen safety insets: \(screen.safeAreaInsets)")
-        guard screen.hasNotch else {
-            NSLog("[AppDelegate] Current main screen does not report a notch")
+
+        guard let screen = allScreens.first(where: { $0.hasNotch }) ?? NSScreen.screens.first else {
+            NSLog("[AppDelegate] No screen found")
             return
         }
 
-        NSLog("[AppDelegate] Notch detected! Geometry: \(screen.notchRect)")
+        if !screen.hasNotch {
+            NSLog("[AppDelegate] No notch found on any screen. Panel will default to top of primary screen.")
+        } else {
+            NSLog("[AppDelegate] Notch detected on screen! Geometry: \(screen.notchRect)")
+        }
         
         notchWindowController = NotchWindowController()
         notchWindowController?.notchDelegate = self
@@ -112,7 +118,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func setupNotchPanel() {
         NSLog("[AppDelegate] Setting up widget panel...")
-        guard let screen = NSScreen.main, screen.hasNotch else { return }
+        let screen = NSScreen.screens.first(where: { $0.hasNotch }) ?? NSScreen.main
+        guard let screen = screen else { return }
         let config = ConfigManager.shared
         
         notchPanelController = NotchPanelController()

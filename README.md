@@ -103,6 +103,10 @@ launchctl unload ~/Library/LaunchAgents/com.opennotch.app.plist
 rm -rf /Applications/OpenNotch.app
 rm ~/Library/LaunchAgents/com.opennotch.app.plist
 rm -rf ~/Library/Application\ Support/OpenNotch
+
+killall OpenNotch
+xcodebuild -project OpenNotch.xcodeproj -scheme OpenNotch CODE_SIGN_IDENTITY="-" CODE_SIGN_STYLE="Manual"
+open /Users/jitselambrichts/Library/Developer/Xcode/DerivedData/OpenNotch-bsxgnmezudeuhlauhylirrdlpkwh/Build/Products/Debug/OpenNotch.app
 ```
 
 ## 📄 License
