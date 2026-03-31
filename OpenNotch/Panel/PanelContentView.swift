@@ -4,30 +4,21 @@ import SwiftUI
 struct PanelContentView: View {
     @Bindable var configManager: ConfigManager
     var topPadding: CGFloat = 0
+    @Environment(\.openURL) private var openURL
 
     var body: some View {
         VStack(spacing: 0) {
-            // Header Row (Nook, Tray, Settings)
+            // Header Row (Settings)
             HStack(spacing: 12) {
-                HStack(spacing: 12) {
-                    Label("Nook", systemImage: "flashlight.on.fill")
-                        .font(.system(size: 13, weight: .semibold))
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 6)
-                        .background(Capsule().fill(Color.white.opacity(0.1)))
-
-                    Label("Tray", systemImage: "archivebox.fill")
-                        .font(.system(size: 13, weight: .semibold))
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 6)
-                }
-                .foregroundStyle(.white)
-
                 Spacer()
 
-                Image(systemName: "gearshape.fill")
-                    .font(.system(size: 16))
-                    .foregroundStyle(.white.opacity(0.6))
+                Button(action: openSettings) {
+                    Image(systemName: "gearshape.fill")
+                        .font(.system(size: 16))
+                        .foregroundStyle(.white.opacity(0.6))
+                        .padding(8)
+                }
+                .buttonStyle(.plain)
             }
             .padding(.horizontal, 24)
             .padding(.top, 20)
@@ -72,6 +63,11 @@ struct PanelContentView: View {
 
     private func enabledWidget(id: String) -> WidgetConfig? {
         configManager.config.widgets.first(where: { $0.id == id && $0.enabled })
+    }
+
+    private func openSettings() {
+        guard let url = URL(string: "http://localhost:7331/") else { return }
+        openURL(url)
     }
 }
 
