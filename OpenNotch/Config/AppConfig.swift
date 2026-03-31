@@ -9,9 +9,9 @@ struct AppConfig: Codable, Equatable {
 
     static let `default` = AppConfig(
         widgets: [
-            WidgetConfig(id: "dateTime", displayName: "Date & Time", iconName: "clock.fill", enabled: true, order: 0, settings: [:]),
+            WidgetConfig(id: "dateTime", displayName: "Weekly Calendar", iconName: "clock.fill", enabled: true, order: 0, settings: [:]),
             WidgetConfig(id: "nowPlaying", displayName: "Now Playing", iconName: "music.note", enabled: true, order: 1, settings: [:]),
-            WidgetConfig(id: "calendar", displayName: "Calendar", iconName: "calendar", enabled: true, order: 2, settings: [:]),
+            WidgetConfig(id: "calendar", displayName: "Upcoming Events", iconName: "calendar", enabled: true, order: 2, settings: [:]),
         ],
         appearance: .default
     )

@@ -26,32 +26,16 @@ struct PanelContentView: View {
 
             // Widgets Area (Horizontal)
             HStack(alignment: .top, spacing: 0) {
-                // Now Playing (Left)
-                if let musicWidget = enabledWidget(id: "nowPlaying") {
-                    WidgetContainerView(widgetConfig: musicWidget)
+                ForEach(Array(orderedEnabledWidgets.enumerated()), id: \.element.id) { index, widget in
+                    WidgetContainerView(widgetConfig: widget)
                         .frame(maxWidth: .infinity)
-                }
 
-                Divider()
-                    .frame(height: 100)
-                    .background(Color.white.opacity(0.05))
-                    .padding(.vertical, 10)
-
-                // Calendar (Center)
-                if let calendarWidget = enabledWidget(id: "calendar") {
-                    WidgetContainerView(widgetConfig: calendarWidget)
-                        .frame(maxWidth: .infinity)
-                }
-
-                Divider()
-                    .frame(height: 100)
-                    .background(Color.white.opacity(0.05))
-                    .padding(.vertical, 10)
-
-                // Date Time (Right)
-                if let dateTimeWidget = enabledWidget(id: "dateTime") {
-                    WidgetContainerView(widgetConfig: dateTimeWidget)
-                        .frame(maxWidth: .infinity)
+                    if index < orderedEnabledWidgets.count - 1 {
+                        Divider()
+                            .frame(height: 100)
+                            .background(Color.white.opacity(0.05))
+                            .padding(.vertical, 10)
+                    }
                 }
             }
             .padding(.horizontal, 12)
@@ -61,8 +45,10 @@ struct PanelContentView: View {
         .environment(\.appearance, configManager.config.appearance)
     }
 
-    private func enabledWidget(id: String) -> WidgetConfig? {
-        configManager.config.widgets.first(where: { $0.id == id && $0.enabled })
+    private var orderedEnabledWidgets: [WidgetConfig] {
+        configManager.config.widgets
+            .filter(\.enabled)
+            .sorted { $0.order < $1.order }
     }
 
     private func openSettings() {
