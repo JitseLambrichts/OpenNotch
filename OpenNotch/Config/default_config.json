@@ -1,0 +1,35 @@
+{
+  "appearance": {
+    "accentColor": "#007AFF",
+    "backgroundOpacity": 0.85,
+    "enableHoverToOpen": true,
+    "fontFamily": "System",
+    "fontSize": 13.0
+  },
+  "widgets": [
+    {
+      "displayName": "Date & Time",
+      "enabled": true,
+      "iconName": "clock.fill",
+      "id": "dateTime",
+      "order": 0,
+      "settings": {}
+    },
+    {
+      "displayName": "Now Playing",
+      "enabled": true,
+      "iconName": "music.note",
+      "id": "nowPlaying",
+      "order": 1,
+      "settings": {}
+    },
+    {
+      "displayName": "Calendar",
+      "enabled": true,
+      "iconName": "calendar",
+      "id": "calendar",
+      "order": 2,
+      "settings": {}
+    }
+  ]
+}

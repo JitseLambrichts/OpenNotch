@@ -1,0 +1,45 @@
+name: OpenNotch
+options:
+  bundleIdPrefix: com.opennotch
+  deploymentTarget:
+    macOS: "14.0"
+  xcodeVersion: "15.0"
+  generateEmptyDirectories: true
+  createIntermediateGroups: true
+
+packages:
+  FlyingFox:
+    url: https://github.com/swhitty/FlyingFox
+    from: "0.16.0"
+
+targets:
+  OpenNotch:
+    type: application
+    platform: macOS
+    sources:
+      - path: OpenNotch
+        excludes:
+          - "WebServer/WebUI/**"
+    resources:
+      - path: OpenNotch/Config/default_config.json
+      - path: OpenNotch/WebServer/WebUI
+        buildPhase: resources
+      - path: OpenNotch/Resources/Assets.xcassets
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.opennotch.app
+        MARKETING_VERSION: "1.0.0"
+        CURRENT_PROJECT_VERSION: "1"
+        INFOPLIST_FILE: OpenNotch/App/Info.plist
+        CODE_SIGN_ENTITLEMENTS: OpenNotch/OpenNotch.entitlements
+        CODE_SIGN_IDENTITY: "-"
+        CODE_SIGN_STYLE: Manual
+        SWIFT_VERSION: "5.10"
+        MACOSX_DEPLOYMENT_TARGET: "14.0"
+        LD_RUNPATH_SEARCH_PATHS: "@executable_path/../Frameworks"
+        COMBINE_HIDPI_IMAGES: true
+    dependencies:
+      - package: FlyingFox
+        product: FlyingFox
+    entitlements:
+      path: OpenNotch/OpenNotch.entitlements

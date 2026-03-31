@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenNotch Settings</title>
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+    <div class="app">
+        <header class="header">
+            <div class="header-icon">
+                <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+                    <rect x="2" y="2" width="24" height="8" rx="4" fill="url(#grad)"/>
+                    <defs><linearGradient id="grad" x1="0" y1="0" x2="28" y2="8">
+                        <stop offset="0%" stop-color="#007AFF"/>
+                        <stop offset="100%" stop-color="#5856D6"/>
+                    </linearGradient></defs>
+                </svg>
+            </div>
+            <div>
+                <h1>OpenNotch</h1>
+                <p class="subtitle">Settings</p>
+            </div>
+        </header>
+
+        <!-- Widgets Section -->
+        <section class="section">
+            <h2>
+                <span class="section-icon">⚡</span>
+                Widgets
+            </h2>
+            <p class="section-desc">Toggle and reorder your notch widgets. Drag to reorder.</p>
+            <div id="widget-list" class="widget-list"></div>
+        </section>
+
+        <!-- Appearance Section -->
+        <section class="section">
+            <h2>
+                <span class="section-icon">🎨</span>
+                Appearance
+            </h2>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="accentColor">Accent Color</label>
+                    <input type="color" id="accentColor" value="#007AFF">
+                </div>
+                <div class="form-group">
+                    <label for="fontSize">Font Size</label>
+                    <div class="range-group">
+                        <input type="range" id="fontSize" min="10" max="18" step="0.5" value="13">
+                        <span id="fontSizeValue">13</span>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="backgroundOpacity">Background Opacity</label>
+                    <div class="range-group">
+                        <input type="range" id="backgroundOpacity" min="0.3" max="1" step="0.05" value="0.85">
+                        <span id="backgroundOpacityValue">0.85</span>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="enableHoverToOpen">Expand on hover</label>
+                    <label class="toggle">
+                        <input type="checkbox" id="enableHoverToOpen">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+            </div>
+        </section>
+
+        <!-- About Section -->
+        <section class="section about-section">
+            <h2>
+                <span class="section-icon">ℹ️</span>
+                About
+            </h2>
+            <div class="about-content">
+                <p><strong>OpenNotch</strong> v1.0.0</p>
+                <p class="muted">A macOS notch widget hub. Inspired by <a href="https://github.com/adamlyttleapps/notchy" target="_blank">Notchy</a>.</p>
+                <p class="muted">Settings are saved to <code>~/Library/Application Support/OpenNotch/config.json</code></p>
+            </div>
+        </section>
+
+        <div id="save-indicator" class="save-indicator">
+            <span class="save-dot"></span>
+            Saved — changes apply instantly
+        </div>
+    </div>
+
+    <script src="/app.js"></script>
+</body>
+</html>
