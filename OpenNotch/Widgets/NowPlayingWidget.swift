@@ -1,6 +1,7 @@
 import SwiftUI
 import Combine
 import AppKit
+import Darwin
 
 // MARK: – Now Playing Data Model
 
@@ -11,6 +12,7 @@ struct NowPlayingInfo: Equatable {
     var artworkURL: String = ""
     var isPlaying: Bool = false
     var appName: String = ""
+    var appBundleID: String = ""
 
     var isEmpty: Bool {
         trackName.isEmpty && artistName.isEmpty
@@ -26,6 +28,7 @@ final class NowPlayingService {
 
     private(set) var info = NowPlayingInfo()
     private var timer: Timer?
+    private let mediaRemote = MediaRemoteBridge()
 
     private init() {
         startPolling()
@@ -46,17 +49,32 @@ final class NowPlayingService {
     }
 
     private func fetchNowPlaying() {
-        DispatchQueue.global(qos: .utility).async { [weak self] in
-            // Try Music.app first, then Spotify
-            if let musicInfo = self?.queryApp(named: "Music", bundleID: "com.apple.Music") {
-                DispatchQueue.main.async { self?.info = musicInfo }
+        mediaRemote.queryNowPlaying { [weak self] systemInfo in
+            if let systemInfo {
+                DispatchQueue.main.async { self?.info = systemInfo }
                 return
             }
-            if let spotifyInfo = self?.queryApp(named: "Spotify", bundleID: "com.spotify.client") {
-                DispatchQueue.main.async { self?.info = spotifyInfo }
-                return
+
+            DispatchQueue.global(qos: .utility).async {
+                guard let self else { return }
+
+                // Check browsers first
+                if let browserInfo = self.queryRunningBrowsers() {
+                    DispatchQueue.main.async { self.info = browserInfo }
+                    return
+                }
+
+                // Fallback for environments where MediaRemote returns no active item.
+                if let musicInfo = self.queryApp(named: "Music", bundleID: "com.apple.Music") {
+                    DispatchQueue.main.async { self.info = musicInfo }
+                    return
+                }
+                if let spotifyInfo = self.queryApp(named: "Spotify", bundleID: "com.spotify.client") {
+                    DispatchQueue.main.async { self.info = spotifyInfo }
+                    return
+                }
+                DispatchQueue.main.async { self.info = NowPlayingInfo() }
             }
-            DispatchQueue.main.async { self?.info = NowPlayingInfo() }
         }
     }
 
@@ -129,18 +147,126 @@ final class NowPlayingService {
             albumName: album,
             artworkURL: artworkURL,
             isPlaying: state == "playing",
-            appName: name
+            appName: name,
+            appBundleID: bundleID
         )
+    }
+
+    private func queryRunningBrowsers() -> NowPlayingInfo? {
+        let chromiumBrowsers = [
+            "com.google.Chrome", "com.brave.Browser", "com.microsoft.edgemac",
+            "company.thebrowser.Browser", "com.vivaldi.Vivaldi"
+        ]
+        let webkitBrowsers = ["com.apple.Safari", "com.kagi.kagimacOS"]
+
+        let runningApps = NSWorkspace.shared.runningApplications
+
+        for app in runningApps {
+            guard let bundleID = app.bundleIdentifier, let name = app.localizedName else { continue }
+
+            if chromiumBrowsers.contains(bundleID) {
+                if let info = queryChromiumBrowser(named: name, bundleID: bundleID) {
+                    return info
+                }
+            } else if webkitBrowsers.contains(bundleID) {
+                if let info = queryWebKitBrowser(named: name, bundleID: bundleID) {
+                    return info
+                }
+            }
+        }
+        return nil
+    }
+
+    private func queryChromiumBrowser(named name: String, bundleID: String) -> NowPlayingInfo? {
+        let script = """
+        tell application "\(name)"
+            repeat with w in windows
+                repeat with t in tabs of w
+                    set tabURL to URL of t
+                    if tabURL contains "youtube.com" or tabURL contains "music.apple.com" or tabURL contains "spotify.com" or tabURL contains "soundcloud.com" then
+                        set tabTitle to title of t
+                        return tabTitle & "|||" & tabURL
+                    end if
+                end repeat
+            end repeat
+        end tell
+        return "|||"
+        """
+        return executeBrowserScript(script: script, name: name, bundleID: bundleID)
+    }
+
+    private func queryWebKitBrowser(named name: String, bundleID: String) -> NowPlayingInfo? {
+        // Safari requires checking 'do JavaScript' or relies solely on MediaRemote.
+        // We'll try a basic AppleScript approach, but MediaRemote usually handles Safari well natively.
+        // For Orion (kagi), it behaves similarly to Safari.
+        let script = """
+        tell application "\(name)"
+            if (count of windows) > 0 then
+                return (name of current tab of front window) & "|||" & (URL of current tab of front window)
+            end if
+        end tell
+        return "|||"
+        """
+        // Note: Without robust "audible" detection in basic AppleScript for Safari,
+        // this fallback might just grab the frontmost tab.
+        // It's safer to rely on MediaRemote for Safari, but we provide this as a last-resort fallback.
+        return executeBrowserScript(script: script, name: name, bundleID: bundleID)
+    }
+
+    private func executeBrowserScript(script: String, name: String, bundleID: String) -> NowPlayingInfo? {
+        guard let appleScript = NSAppleScript(source: script) else { return nil }
+        var error: NSDictionary?
+        let result = appleScript.executeAndReturnError(&error)
+
+        guard error == nil, let output = result.stringValue else { return nil }
+        let parts = output.components(separatedBy: "|||")
+        guard parts.count >= 2 else { return nil }
+
+        let rawTitle = parts[0].trimmingCharacters(in: .whitespacesAndNewlines)
+        let pageURL = parts[1].trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !rawTitle.isEmpty else { return nil }
+
+        let title = normalizeBrowserTrackTitle(rawTitle)
+        let artist = inferBrowserSourceName(from: pageURL)
+
+        return NowPlayingInfo(
+            trackName: title,
+            artistName: artist,
+            albumName: "",
+            artworkURL: "",
+            isPlaying: true, // We assume it's playing if it's audible
+            appName: name,
+            appBundleID: bundleID
+        )
+    }
+
+    private func normalizeBrowserTrackTitle(_ title: String) -> String {
+        if title.hasSuffix(" - YouTube") {
+            return String(title.dropLast(" - YouTube".count)).trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+        if title.hasSuffix(" - YouTube Music") {
+            return String(title.dropLast(" - YouTube Music".count)).trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+        return title
+    }
+
+    private func inferBrowserSourceName(from pageURL: String) -> String {
+        if pageURL.contains("youtube.com") || pageURL.contains("youtu.be") {
+            return "YouTube"
+        }
+        if pageURL.contains("music.youtube.com") {
+            return "YouTube Music"
+        }
+        if pageURL.contains("spotify.com") {
+            return "Spotify Web"
+        }
+        return "Browser"
     }
 
     // MARK: – Playback Controls
 
     func togglePlayPause() {
-        if info.appName == "Music" {
-            runAppleScript("tell application \"Music\" to playpause")
-        } else if info.appName == "Spotify" {
-            runAppleScript("tell application \"Spotify\" to playpause")
-        }
+        mediaRemote.sendCommand(.togglePlayPause)
         // Refresh immediately
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
             self?.fetchNowPlaying()
@@ -148,22 +274,14 @@ final class NowPlayingService {
     }
 
     func nextTrack() {
-        if info.appName == "Music" {
-            runAppleScript("tell application \"Music\" to next track")
-        } else if info.appName == "Spotify" {
-            runAppleScript("tell application \"Spotify\" to next track")
-        }
+        mediaRemote.sendCommand(.nextTrack)
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
             self?.fetchNowPlaying()
         }
     }
 
     func previousTrack() {
-        if info.appName == "Music" {
-            runAppleScript("tell application \"Music\" to previous track")
-        } else if info.appName == "Spotify" {
-            runAppleScript("tell application \"Spotify\" to previous track")
-        }
+        mediaRemote.sendCommand(.previousTrack)
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
             self?.fetchNowPlaying()
         }
@@ -175,6 +293,225 @@ final class NowPlayingService {
             var error: NSDictionary?
             script?.executeAndReturnError(&error)
         }
+    }
+}
+
+// MARK: - System Now Playing Bridge (MediaRemote)
+
+private final class MediaRemoteBridge {
+    typealias MRGetNowPlayingInfo = @convention(c) (DispatchQueue, @escaping (CFDictionary?) -> Void) -> Void
+    typealias MRGetNowPlayingApplicationPID = @convention(c) (DispatchQueue, @escaping (Int32) -> Void) -> Void
+    typealias MRGetNowPlayingApplicationIsPlaying = @convention(c) (DispatchQueue, @escaping (Bool) -> Void) -> Void
+    typealias MRRegisterForNowPlayingNotifications = @convention(c) (DispatchQueue) -> Void
+    typealias MRKeepAlive = @convention(c) () -> Void
+    typealias MRUnregisterForNowPlayingNotifications = @convention(c) () -> Void
+    typealias MRMediaRemoteSendCommand = @convention(c) (UInt32, CFDictionary?) -> Bool
+
+    enum MRCommand: UInt32 {
+        case play = 0
+        case pause = 1
+        case togglePlayPause = 2
+        case nextTrack = 4
+        case previousTrack = 5
+    }
+
+    private let handle: UnsafeMutableRawPointer?
+    private let getNowPlayingInfoFn: MRGetNowPlayingInfo?
+    private let getNowPlayingPIDFn: MRGetNowPlayingApplicationPID?
+    private let getNowPlayingIsPlayingFn: MRGetNowPlayingApplicationIsPlaying?
+    private let registerForNowPlayingNotificationsFn: MRRegisterForNowPlayingNotifications?
+    private let keepAliveFn: MRKeepAlive?
+    private let unregisterForNowPlayingNotificationsFn: MRUnregisterForNowPlayingNotifications?
+    private let sendCommandFn: MRMediaRemoteSendCommand?
+
+    private let titleKey: String
+    private let artistKey: String
+    private let albumKey: String
+    private let playbackRateKey: String
+
+    init() {
+        guard let handle = dlopen("/System/Library/PrivateFrameworks/MediaRemote.framework/MediaRemote", RTLD_NOW) else {
+            self.handle = nil
+            self.getNowPlayingInfoFn = nil
+            self.getNowPlayingPIDFn = nil
+            self.getNowPlayingIsPlayingFn = nil
+            self.registerForNowPlayingNotificationsFn = nil
+            self.keepAliveFn = nil
+            self.unregisterForNowPlayingNotificationsFn = nil
+            self.sendCommandFn = nil
+            self.titleKey = "kMRMediaRemoteNowPlayingInfoTitle"
+            self.artistKey = "kMRMediaRemoteNowPlayingInfoArtist"
+            self.albumKey = "kMRMediaRemoteNowPlayingInfoAlbum"
+            self.playbackRateKey = "kMRMediaRemoteNowPlayingInfoPlaybackRate"
+            return
+        }
+
+        self.handle = handle
+        self.getNowPlayingInfoFn = dlsym(handle, "MRMediaRemoteGetNowPlayingInfo")
+            .map { unsafeBitCast($0, to: MRGetNowPlayingInfo.self) }
+        self.getNowPlayingPIDFn = dlsym(handle, "MRMediaRemoteGetNowPlayingApplicationPID")
+            .map { unsafeBitCast($0, to: MRGetNowPlayingApplicationPID.self) }
+        self.getNowPlayingIsPlayingFn = dlsym(handle, "MRMediaRemoteGetNowPlayingApplicationIsPlaying")
+            .map { unsafeBitCast($0, to: MRGetNowPlayingApplicationIsPlaying.self) }
+        self.registerForNowPlayingNotificationsFn = dlsym(handle, "MRMediaRemoteRegisterForNowPlayingNotifications")
+            .map { unsafeBitCast($0, to: MRRegisterForNowPlayingNotifications.self) }
+        self.keepAliveFn = dlsym(handle, "MRMediaRemoteKeepAlive")
+            .map { unsafeBitCast($0, to: MRKeepAlive.self) }
+        self.unregisterForNowPlayingNotificationsFn = dlsym(handle, "MRMediaRemoteUnregisterForNowPlayingNotifications")
+            .map { unsafeBitCast($0, to: MRUnregisterForNowPlayingNotifications.self) }
+        self.sendCommandFn = dlsym(handle, "MRMediaRemoteSendCommand")
+            .map { unsafeBitCast($0, to: MRMediaRemoteSendCommand.self) }
+
+        let resolvedTitleKey = Self.loadCFStringSymbol(handle: handle, symbolName: "kMRMediaRemoteNowPlayingInfoTitle")
+        let resolvedArtistKey = Self.loadCFStringSymbol(handle: handle, symbolName: "kMRMediaRemoteNowPlayingInfoArtist")
+        let resolvedAlbumKey = Self.loadCFStringSymbol(handle: handle, symbolName: "kMRMediaRemoteNowPlayingInfoAlbum")
+        let resolvedPlaybackRateKey = Self.loadCFStringSymbol(handle: handle, symbolName: "kMRMediaRemoteNowPlayingInfoPlaybackRate")
+
+        self.titleKey = resolvedTitleKey ?? "kMRMediaRemoteNowPlayingInfoTitle"
+        self.artistKey = resolvedArtistKey ?? "kMRMediaRemoteNowPlayingInfoArtist"
+        self.albumKey = resolvedAlbumKey ?? "kMRMediaRemoteNowPlayingInfoAlbum"
+        self.playbackRateKey = resolvedPlaybackRateKey ?? "kMRMediaRemoteNowPlayingInfoPlaybackRate"
+
+        let notificationQueue = DispatchQueue(label: "opennotch.mediaremote")
+        keepAliveFn?()
+        registerForNowPlayingNotificationsFn?(notificationQueue)
+    }
+
+    deinit {
+        unregisterForNowPlayingNotificationsFn?()
+        if let handle {
+            dlclose(handle)
+        }
+    }
+
+    func queryNowPlaying(completion: @escaping (NowPlayingInfo?) -> Void) {
+        guard let getNowPlayingInfoFn else {
+            completion(nil)
+            return
+        }
+
+        let queue = DispatchQueue.global(qos: .utility)
+        let group = DispatchGroup()
+        var infoDict: [String: Any]?
+        var pid: Int32?
+        var isPlaying: Bool?
+
+        group.enter()
+        getNowPlayingInfoFn(queue) { dict in
+            if let dict {
+                infoDict = dict as? [String: Any]
+            }
+            group.leave()
+        }
+
+        if let getNowPlayingPIDFn {
+            group.enter()
+            getNowPlayingPIDFn(queue) { currentPID in
+                pid = currentPID
+                group.leave()
+            }
+        }
+
+        if let getNowPlayingIsPlayingFn {
+            group.enter()
+            getNowPlayingIsPlayingFn(queue) { currentIsPlaying in
+                isPlaying = currentIsPlaying
+                group.leave()
+            }
+        }
+
+        group.notify(queue: queue) {
+            guard let infoDict else {
+                completion(nil)
+                return
+            }
+
+            let track = self.stringValue(
+                from: infoDict,
+                keys: [
+                    self.titleKey,
+                    "title",
+                    "kMRMediaRemoteNowPlayingInfoTitle"
+                ]
+            )
+            let artist = self.stringValue(
+                from: infoDict,
+                keys: [
+                    self.artistKey,
+                    "artist",
+                    "kMRMediaRemoteNowPlayingInfoArtist"
+                ]
+            )
+            let album = self.stringValue(
+                from: infoDict,
+                keys: [
+                    self.albumKey,
+                    "album",
+                    "kMRMediaRemoteNowPlayingInfoAlbum"
+                ]
+            )
+
+            if track.isEmpty && artist.isEmpty {
+                completion(nil)
+                return
+            }
+
+            let playbackRate = self.doubleValue(
+                from: infoDict,
+                keys: [
+                    self.playbackRateKey,
+                    "playbackRate"
+                ]
+            )
+
+            let runningApp = pid.flatMap { NSRunningApplication(processIdentifier: $0) }
+            let appName = runningApp?.localizedName ?? ""
+            let bundleID = runningApp?.bundleIdentifier ?? ""
+
+            completion(
+                NowPlayingInfo(
+                    trackName: track,
+                    artistName: artist,
+                    albumName: album,
+                    artworkURL: "",
+                    isPlaying: isPlaying ?? (playbackRate > 0),
+                    appName: appName,
+                    appBundleID: bundleID
+                )
+            )
+        }
+    }
+
+    func sendCommand(_ command: MRCommand) {
+        _ = sendCommandFn?(command.rawValue, nil)
+    }
+
+    private static func loadCFStringSymbol(handle: UnsafeMutableRawPointer, symbolName: String) -> String? {
+        guard let symbol = dlsym(handle, symbolName) else { return nil }
+        let keyPointer = symbol.assumingMemoryBound(to: CFString?.self)
+        guard let key = keyPointer.pointee else { return nil }
+        return key as String
+    }
+
+    private func stringValue(from dict: [String: Any], keys: [String]) -> String {
+        for key in keys {
+            if let value = dict[key] as? String, !value.isEmpty {
+                return value
+            }
+        }
+        return ""
+    }
+
+    private func doubleValue(from dict: [String: Any], keys: [String]) -> Double {
+        for key in keys {
+            if let value = dict[key] as? Double {
+                return value
+            }
+            if let value = dict[key] as? NSNumber {
+                return value.doubleValue
+            }
+        }
+        return 0
     }
 }
 
@@ -292,6 +629,10 @@ struct NowPlayingWidget: View {
     }
 
     private var sourceBadgeIcon: NSImage {
+        if !service.info.appBundleID.isEmpty {
+            return iconForApp(bundleIdentifier: service.info.appBundleID, fallbackSystemName: "music.note")
+        }
+
         switch service.info.appName {
         case "Spotify":
             return iconForApp(bundleIdentifier: "com.spotify.client", fallbackSystemName: "music.note")
