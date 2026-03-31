@@ -27,6 +27,7 @@ struct PanelContentView: View {
                 .padding(.bottom, 16)
             }
         }
+        .environment(\.appearance, configManager.config.appearance)
         .animation(.spring(response: 0.4, dampingFraction: 0.85), value: sortedEnabledWidgets.map(\.id))
     }
 
@@ -34,6 +35,19 @@ struct PanelContentView: View {
         configManager.config.widgets
             .filter { $0.enabled }
             .sorted { $0.order < $1.order }
+    }
+}
+
+// MARK: – Environment Keys
+
+struct AppearanceEnvironmentKey: EnvironmentKey {
+    static let defaultValue: AppearanceConfig = .default
+}
+
+extension EnvironmentValues {
+    var appearance: AppearanceConfig {
+        get { self[AppearanceEnvironmentKey.self] }
+        set { self[AppearanceEnvironmentKey.self] = newValue }
     }
 }
 

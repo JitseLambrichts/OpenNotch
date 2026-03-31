@@ -108,28 +108,29 @@ final class CalendarService {
 // MARK: – Widget View
 
 struct CalendarWidget: View {
+    @Environment(\.appearance) private var appearance
     @State private var service = CalendarService.shared
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
                 Image(systemName: "calendar")
-                    .font(.system(size: 14))
-                    .foregroundStyle(.orange)
+                    .font(appearance.font(size: 14))
+                    .foregroundStyle(appearance.color)
                 Text("Upcoming")
-                    .font(.system(size: 13, weight: .semibold))
+                    .font(appearance.font(size: 13, weight: .semibold))
                     .foregroundStyle(.white.opacity(0.8))
                 Spacer()
             }
 
             if !service.accessGranted {
                 Text("Calendar access not granted. Please allow in System Settings → Privacy → Calendars.")
-                    .font(.system(size: 11))
+                    .font(appearance.font(size: 11))
                     .foregroundStyle(.white.opacity(0.4))
                     .multilineTextAlignment(.leading)
             } else if service.upcomingEvents.isEmpty {
                 Text("No upcoming events today")
-                    .font(.system(size: 12))
+                    .font(appearance.font(size: 12))
                     .foregroundStyle(.white.opacity(0.4))
             } else {
                 ForEach(service.upcomingEvents) { event in
@@ -147,6 +148,7 @@ struct CalendarWidget: View {
 // MARK: – Event Row
 
 private struct EventRow: View {
+    @Environment(\.appearance) private var appearance
     let event: CalendarService.CalendarEvent
 
     var body: some View {
@@ -158,17 +160,17 @@ private struct EventRow: View {
 
             VStack(alignment: .leading, spacing: 1) {
                 Text(event.title)
-                    .font(.system(size: 12, weight: .medium))
+                    .font(appearance.font(size: 12, weight: .medium))
                     .foregroundStyle(.white)
                     .lineLimit(1)
 
                 if event.isAllDay {
                     Text("All day")
-                        .font(.system(size: 10))
+                        .font(appearance.font(size: 10))
                         .foregroundStyle(.white.opacity(0.4))
                 } else {
                     Text(timeRange)
-                        .font(.system(size: 10, design: .monospaced))
+                        .font(appearance.font(size: 10, design: .monospaced))
                         .foregroundStyle(.white.opacity(0.4))
                 }
             }

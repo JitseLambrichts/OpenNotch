@@ -175,6 +175,7 @@ final class NowPlayingService {
 // MARK: – Widget View
 
 struct NowPlayingWidget: View {
+    @Environment(\.appearance) private var appearance
     @State private var service = NowPlayingService.shared
 
     var body: some View {
@@ -183,14 +184,14 @@ struct NowPlayingWidget: View {
                 // No media playing
                 HStack(spacing: 10) {
                     Image(systemName: "music.note")
-                        .font(.system(size: 20))
+                        .font(appearance.font(size: 20))
                         .foregroundStyle(.gray)
                     VStack(alignment: .leading, spacing: 2) {
                         Text("No media playing")
-                            .font(.system(size: 13, weight: .medium))
+                            .font(appearance.font(size: 13, weight: .medium))
                             .foregroundStyle(.white.opacity(0.5))
                         Text("Open Music or Spotify to see playback info")
-                            .font(.system(size: 11))
+                            .font(appearance.font(size: 11))
                             .foregroundStyle(.white.opacity(0.3))
                     }
                 }
@@ -202,7 +203,7 @@ struct NowPlayingWidget: View {
                         Circle()
                             .fill(
                                 LinearGradient(
-                                    colors: [.purple, .blue, .cyan],
+                                    colors: [appearance.color, .blue, .cyan],
                                     startPoint: .topLeading,
                                     endPoint: .bottomTrailing
                                 )
@@ -210,24 +211,24 @@ struct NowPlayingWidget: View {
                             .frame(width: 44, height: 44)
 
                         Image(systemName: "music.note")
-                            .font(.system(size: 18, weight: .medium))
+                            .font(appearance.font(size: 18, weight: .medium))
                             .foregroundStyle(.white)
                     }
 
                     VStack(alignment: .leading, spacing: 3) {
                         Text(service.info.trackName)
-                            .font(.system(size: 13, weight: .semibold))
+                            .font(appearance.font(size: 13, weight: .semibold))
                             .foregroundStyle(.white)
                             .lineLimit(1)
 
                         Text(service.info.artistName)
-                            .font(.system(size: 12))
+                            .font(appearance.font(size: 12))
                             .foregroundStyle(.white.opacity(0.6))
                             .lineLimit(1)
 
                         if !service.info.albumName.isEmpty {
                             Text(service.info.albumName)
-                                .font(.system(size: 11))
+                                .font(appearance.font(size: 11))
                                 .foregroundStyle(.white.opacity(0.4))
                                 .lineLimit(1)
                         }
@@ -237,7 +238,7 @@ struct NowPlayingWidget: View {
 
                     // Source indicator
                     Text(service.info.appName)
-                        .font(.system(size: 10, weight: .medium))
+                        .font(appearance.font(size: 10, weight: .medium))
                         .foregroundStyle(.white.opacity(0.3))
                         .padding(.horizontal, 6)
                         .padding(.vertical, 2)
@@ -250,21 +251,21 @@ struct NowPlayingWidget: View {
 
                     Button(action: { service.previousTrack() }) {
                         Image(systemName: "backward.fill")
-                            .font(.system(size: 14))
+                            .font(appearance.font(size: 14))
                             .foregroundStyle(.white.opacity(0.7))
                     }
                     .buttonStyle(.plain)
 
                     Button(action: { service.togglePlayPause() }) {
                         Image(systemName: service.info.isPlaying ? "pause.fill" : "play.fill")
-                            .font(.system(size: 18))
-                            .foregroundStyle(.white)
+                            .font(appearance.font(size: 18))
+                            .foregroundStyle(appearance.color)
                     }
                     .buttonStyle(.plain)
 
                     Button(action: { service.nextTrack() }) {
                         Image(systemName: "forward.fill")
-                            .font(.system(size: 14))
+                            .font(appearance.font(size: 14))
                             .foregroundStyle(.white.opacity(0.7))
                     }
                     .buttonStyle(.plain)

@@ -20,10 +20,11 @@ targets:
       - path: OpenNotch
         excludes:
           - "WebServer/WebUI/**"
+      - path: OpenNotch/WebServer/WebUI
+        type: folder
+        buildPhase: resources
     resources:
       - path: OpenNotch/Config/default_config.json
-      - path: OpenNotch/WebServer/WebUI
-        buildPhase: resources
       - path: OpenNotch/Resources/Assets.xcassets
     settings:
       base:

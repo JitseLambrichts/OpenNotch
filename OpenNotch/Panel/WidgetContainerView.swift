@@ -2,6 +2,7 @@ import SwiftUI
 
 /// Renders the correct widget view for a given WidgetConfig.
 struct WidgetContainerView: View {
+    @Environment(\.appearance) private var appearance
     let widgetConfig: WidgetConfig
 
     var body: some View {
@@ -21,6 +22,7 @@ struct WidgetContainerView: View {
         .background(
             RoundedRectangle(cornerRadius: 12)
                 .fill(.ultraThinMaterial)
+                .opacity(appearance.backgroundOpacity)
                 .shadow(color: .black.opacity(0.15), radius: 4, x: 0, y: 2)
         )
     }
