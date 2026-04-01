@@ -24,6 +24,11 @@ struct PanelContentView: View {
             .padding(.top, 20)
             .padding(.bottom, 12)
 
+            // Safe Space Row
+            SafeSpaceWidgetView()
+                .padding(.horizontal, 24)
+                .padding(.bottom, 12)
+
             // Widgets Area (Horizontal)
             HStack(alignment: .center, spacing: 0) {
                 ForEach(Array(orderedEnabledWidgets.enumerated()), id: \.element.id) { index, widget in

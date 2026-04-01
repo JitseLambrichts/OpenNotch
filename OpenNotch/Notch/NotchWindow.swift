@@ -6,6 +6,7 @@ import SwiftUI
 protocol NotchWindowDelegate: AnyObject {
     func notchWindowMouseEntered()
     func notchWindowMouseExited()
+    func notchWindowDraggingEntered()
 }
 
 // MARK: – NotchWindowController (Safe Controller Pattern)
@@ -39,6 +40,7 @@ class NotchWindowController: NSObject {
 
         let tView = NotchTrackingView(frame: NSRect(origin: .zero, size: hoverRect.size))
         tView.controller = self
+        tView.registerForDraggedTypes([.fileURL])
         panel.contentView = tView
         self.trackingView = tView
         
@@ -51,6 +53,10 @@ class NotchWindowController: NSObject {
 
     func mouseExited() {
         notchDelegate?.notchWindowMouseExited()
+    }
+
+    func draggingEntered() {
+        notchDelegate?.notchWindowDraggingEntered()
     }
 }
 
@@ -74,5 +80,11 @@ private class NotchTrackingView: NSView {
     }
     override func mouseExited(with event: NSEvent) {
         controller?.mouseExited()
+    }
+
+    // MARK: - NSDraggingDestination
+    override func draggingEntered(_ sender: NSDraggingInfo) -> NSDragOperation {
+        controller?.draggingEntered()
+        return .copy
     }
 }

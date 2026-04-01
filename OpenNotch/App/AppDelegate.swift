@@ -221,4 +221,10 @@ extension AppDelegate: NotchWindowDelegate {
 
     func notchWindowMouseExited() {
     }
+
+    func notchWindowDraggingEntered() {
+        guard let controller = notchPanelController, !controller.panel.isVisible else { return }
+        isHoverMode = true
+        showPanel()
+    }
 }
