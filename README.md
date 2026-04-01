@@ -1,4 +1,8 @@
-<h1 align="center">OpenNotch</h1>
+<p align="center">
+  <img width="128" height="128" alt="Image" src="https://github.com/user-attachments/assets/e20ac9ad-81ef-4cb0-afa0-2f0dab8ce1ab" />
+  <h1 align="center">OpenNotch</h1>
+</p>
+  
 
 <p align="center">
   <strong>A macOS menu bar app that turns your MacBook's notch into a configurable widget hub.</strong>
