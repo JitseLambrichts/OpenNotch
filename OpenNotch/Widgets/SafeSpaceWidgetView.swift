@@ -7,15 +7,10 @@ struct SafeSpaceWidgetView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Safe Space")
-                .font(.caption)
-                .foregroundColor(.secondary)
-                .padding(.horizontal, 12)
-
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 12) {
                     if manager.items.isEmpty {
-                        Text("Drop files here to store temporarily")
+                        Text("Drop files anywhere here to store temporarily")
                             .font(.caption)
                             .foregroundColor(.secondary)
                             .frame(maxWidth: .infinity, alignment: .center)

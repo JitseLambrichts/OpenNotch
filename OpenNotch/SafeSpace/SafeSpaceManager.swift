@@ -24,6 +24,7 @@ class SafeSpaceManager {
     static let shared = SafeSpaceManager()
 
     var items: [SafeSpaceItem] = []
+    var isSafeSpaceActive: Bool = false // Add a state to manage current tab
     private let fileManager = FileManager.default
     private let safeSpaceDirectory: URL
 

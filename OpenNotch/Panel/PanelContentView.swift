@@ -3,13 +3,42 @@ import SwiftUI
 /// Root SwiftUI view inside the NotchPanel. Composes widgets based on config.
 struct PanelContentView: View {
     @Bindable var configManager: ConfigManager
+    @Bindable var safeSpaceManager = SafeSpaceManager.shared
     var topPadding: CGFloat = 0
     @Environment(\.openURL) private var openURL
 
     var body: some View {
         VStack(spacing: 0) {
-            // Header Row (Settings)
+            // Header Row (Tabs & Settings)
             HStack(spacing: 12) {
+                // Tab switcher
+                HStack(spacing: 8) {
+                    Button(action: { safeSpaceManager.isSafeSpaceActive = false }) {
+                        Text("Widgets")
+                            .font(.system(size: 13, weight: .medium))
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 6)
+                            .background(!safeSpaceManager.isSafeSpaceActive ? Color.white.opacity(0.1) : Color.clear)
+                            .cornerRadius(16)
+                            .foregroundStyle(!safeSpaceManager.isSafeSpaceActive ? .white : .white.opacity(0.5))
+                    }
+                    .buttonStyle(.plain)
+
+                    Button(action: { safeSpaceManager.isSafeSpaceActive = true }) {
+                        Text("Safe Space")
+                            .font(.system(size: 13, weight: .medium))
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 6)
+                            .background(safeSpaceManager.isSafeSpaceActive ? Color.white.opacity(0.1) : Color.clear)
+                            .cornerRadius(16)
+                            .foregroundStyle(safeSpaceManager.isSafeSpaceActive ? .white : .white.opacity(0.5))
+                    }
+                    .buttonStyle(.plain)
+                }
+                .padding(4)
+                .background(Color.black.opacity(0.2))
+                .cornerRadius(20)
+
                 Spacer()
 
                 Button(action: openSettings) {
@@ -24,27 +53,30 @@ struct PanelContentView: View {
             .padding(.top, 20)
             .padding(.bottom, 12)
 
-            // Safe Space Row
-            SafeSpaceWidgetView()
-                .padding(.horizontal, 24)
-                .padding(.bottom, 12)
+            if safeSpaceManager.isSafeSpaceActive {
+                // Safe Space Tab
+                SafeSpaceWidgetView()
+                    .padding(.horizontal, 24)
+                    .padding(.bottom, 36)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else {
+                // Widgets Tab (Horizontal)
+                HStack(alignment: .center, spacing: 0) {
+                    ForEach(Array(orderedEnabledWidgets.enumerated()), id: \.element.id) { index, widget in
+                        WidgetContainerView(widgetConfig: widget)
+                            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
 
-            // Widgets Area (Horizontal)
-            HStack(alignment: .center, spacing: 0) {
-                ForEach(Array(orderedEnabledWidgets.enumerated()), id: \.element.id) { index, widget in
-                    WidgetContainerView(widgetConfig: widget)
-                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
-
-                    if index < orderedEnabledWidgets.count - 1 {
-                        Divider()
-                            .frame(height: 100)
-                            .background(Color.white.opacity(0.05))
-                            .padding(.vertical, 10)
+                        if index < orderedEnabledWidgets.count - 1 {
+                            Divider()
+                                .frame(height: 100)
+                                .background(Color.white.opacity(0.05))
+                                .padding(.vertical, 10)
+                        }
                     }
                 }
+                .padding(.horizontal, 12)
+                .padding(.bottom, 36)
             }
-            .padding(.horizontal, 12)
-            .padding(.bottom, 36)
         }
         .padding(.top, topPadding)
         .environment(\.appearance, configManager.config.appearance)

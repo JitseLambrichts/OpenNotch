@@ -223,8 +223,13 @@ extension AppDelegate: NotchWindowDelegate {
     }
 
     func notchWindowDraggingEntered() {
-        guard let controller = notchPanelController, !controller.panel.isVisible else { return }
-        isHoverMode = true
-        showPanel()
+        guard let controller = notchPanelController else { return }
+        DispatchQueue.main.async {
+            SafeSpaceManager.shared.isSafeSpaceActive = true // Force switch to Safe Space tab
+            if !controller.panel.isVisible {
+                self.isHoverMode = true
+                self.showPanel()
+            }
+        }
     }
 }
