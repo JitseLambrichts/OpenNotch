@@ -12,13 +12,14 @@
 </p>
 
 <p align="center">
-  <em>Hover over the notch to reveal a floating panel with live widgets — currently playing music, upcoming calendar events, date/time, and more.</em>
+  <em>Hover over the notch to reveal a floating panel with live widgets. Currently playing music, upcoming calendar events, date/time, and more.</em>
+</p>
+
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/a81fe25f-c3ea-43fe-8301-9974b5ee8f66" alt="OpenNotch Demo">
 </p>
 
 <br/>
-
-<!-- TODO: Add a nice screenshot or GIF of the app in action here -->
-<!-- <p align="center"><img src="docs/demo.gif" alt="OpenNotch Demo" width="600"/></p> -->
 
 ## ✨ Features
 
@@ -40,7 +41,7 @@
 ### Quick Install
 
 ```bash
-git clone https://github.com/youruser/OpenNotch.git
+git clone https://github.com/JitseLambrichts/OpenNotch.git
 cd OpenNotch
 chmod +x install.sh
 ./install.sh
@@ -103,10 +104,6 @@ launchctl unload ~/Library/LaunchAgents/com.opennotch.app.plist
 rm -rf /Applications/OpenNotch.app
 rm ~/Library/LaunchAgents/com.opennotch.app.plist
 rm -rf ~/Library/Application\ Support/OpenNotch
-
-killall OpenNotch
-xcodebuild -project OpenNotch.xcodeproj -scheme OpenNotch CODE_SIGN_IDENTITY="-" CODE_SIGN_STYLE="Manual"
-open /Users/jitselambrichts/Library/Developer/Xcode/DerivedData/OpenNotch-bsxgnmezudeuhlauhylirrdlpkwh/Build/Products/Debug/OpenNotch.app
 ```
 
 ## 📄 License
