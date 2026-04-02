@@ -8,11 +8,19 @@
   },
   "widgets": [
     {
-      "displayName": "Date & Time",
+      "displayName": "Clock & Date",
       "enabled": true,
-      "iconName": "clock.fill",
-      "id": "dateTime",
+      "iconName": "clock",
+      "id": "clock",
       "order": 0,
+      "settings": {}
+    },
+    {
+      "displayName": "Weekly Calendar",
+      "enabled": true,
+      "iconName": "calendar",
+      "id": "dateTime",
+      "order": 1,
       "settings": {}
     },
     {
@@ -20,15 +28,15 @@
       "enabled": true,
       "iconName": "music.note",
       "id": "nowPlaying",
-      "order": 1,
+      "order": 2,
       "settings": {}
     },
     {
-      "displayName": "Calendar",
+      "displayName": "Upcoming Events",
       "enabled": true,
-      "iconName": "calendar",
+      "iconName": "calendar.badge.clock",
       "id": "calendar",
-      "order": 2,
+      "order": 3,
       "settings": {}
     }
   ]

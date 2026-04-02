@@ -8,6 +8,8 @@ struct WidgetContainerView: View {
     var body: some View {
         Group {
             switch widgetConfig.id {
+            case "clock":
+                ClockWidget()
             case "dateTime":
                 DateTimeWidget()
             case "nowPlaying":
