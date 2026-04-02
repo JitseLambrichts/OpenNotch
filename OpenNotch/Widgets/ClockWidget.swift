@@ -7,12 +7,14 @@ struct ClockWidget: View {
         TimelineView(.periodic(from: .now, by: 1.0)) { context in
             VStack(spacing: 4) {
                 Text(context.date.formatted(date: .omitted, time: .standard))
-                    .font(appearance.font(size: 32, weight: .bold, design: .rounded))
+                    .font(.system(size: 36, weight: .light, design: .default))
+                    .monospacedDigit()
                     .foregroundStyle(.white)
 
                 Text(context.date.formatted(date: .complete, time: .omitted))
-                    .font(appearance.font(size: 14, weight: .medium))
-                    .foregroundStyle(.white.opacity(0.8))
+                    .font(.system(size: 14, weight: .light, design: .default))
+                    .textCase(.uppercase)
+                    .foregroundStyle(.white.opacity(0.6))
             }
             .frame(maxWidth: .infinity)
             .padding(.horizontal, 16)
