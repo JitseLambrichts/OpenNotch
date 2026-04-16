@@ -201,26 +201,38 @@ struct ClaudeUsageBarView: View {
                     ZStack(alignment: .leading) {
                         Capsule()
                             .fill(.white.opacity(0.15))
-                            .frame(height: 3)
+                            .frame(height: 2)
                         Capsule()
                             .fill(appearance.color)
-                            .frame(width: max(0, geo.size.width * service.utilization), height: 3)
+                            .frame(width: max(0, geo.size.width * service.utilization), height: 2)
                             .animation(.easeOut(duration: 0.5), value: service.utilization)
                     }
                     .frame(maxHeight: .infinity)
                 }
-                .frame(height: 7)
+                .frame(height: 6)
 
                 Circle()
                     .fill(service.utilization >= 0.999 ? appearance.color : .white.opacity(0.4))
-                    .frame(width: 7, height: 7)
+                    .frame(width: 5, height: 5)
                     .animation(.easeOut(duration: 0.2), value: service.utilization)
 
                 Text("\(Int(service.utilization * 100))%")
-                    .font(appearance.font(size: 10, weight: .bold))
+                    .font(appearance.font(size: 9, weight: .bold))
                     .foregroundStyle(.white.opacity(0.8))
                     .monospacedDigit()
-                    .frame(minWidth: 32, alignment: .trailing)
+                    .frame(minWidth: 28, alignment: .trailing)
+
+                Button {
+                    Task { await service.refresh() }
+                } label: {
+                    Image(systemName: "arrow.clockwise")
+                        .font(.system(size: 9, weight: .semibold))
+                        .foregroundStyle(.white.opacity(service.status == .loading ? 0.3 : 0.6))
+                        .rotationEffect(.degrees(service.status == .loading ? 360 : 0))
+                }
+                .buttonStyle(.plain)
+                .disabled(service.status == .loading)
+                .animation(service.status == .loading ? .linear(duration: 1).repeatForever(autoreverses: false) : .default, value: service.status)
             }
             .padding(.vertical, 2)
             .background(Color.black.opacity(0.01)) // Helps with hit testing if needed

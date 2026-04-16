@@ -89,6 +89,9 @@ struct PanelContentView: View {
                     .padding(.bottom, safeSpaceManager.isSafeSpaceActive ? 8 : 14)
             }
         }
+        .onAppear {
+            Task { await ClaudeUsageService.shared.refresh() }
+        }
     }
 
     private var orderedEnabledWidgets: [WidgetConfig] {
