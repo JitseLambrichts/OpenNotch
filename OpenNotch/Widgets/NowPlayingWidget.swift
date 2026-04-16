@@ -614,8 +614,8 @@ struct NowPlayingWidget: View {
                     .foregroundStyle(.white.opacity(0.4))
                     .frame(maxWidth: .infinity)
             } else {
-                // Main content: Vertically stacked (Album → Title/Artist → Controls)
-                VStack(alignment: .center, spacing: 10) {
+                // Horizontal Layout: Album Art on left, Info and Controls on right
+                HStack(alignment: .center, spacing: 14) {
                     // Album Art with badge
                     ZStack(alignment: .bottomTrailing) {
                         Group {
@@ -634,13 +634,13 @@ struct NowPlayingWidget: View {
                                 artworkPlaceholder
                             }
                         }
-                        .frame(width: 70, height: 70)
+                        .frame(width: 56, height: 56)
                         .clipShape(RoundedRectangle(cornerRadius: 10))
 
                         Image(nsImage: sourceBadgeIcon)
                             .resizable()
                             .scaledToFill()
-                            .frame(width: 16, height: 16)
+                            .frame(width: 14, height: 14)
                             .clipShape(Circle())
                             .overlay(
                                 Circle().stroke(Color.white.opacity(0.35), lineWidth: 1)
@@ -648,47 +648,44 @@ struct NowPlayingWidget: View {
                             .padding(2)
                     }
 
-                    // Track Info (Title + Artist)
-                    VStack(alignment: .center, spacing: 2) {
-                        Text(service.info.trackName)
-                            .font(appearance.font(size: 12, weight: .bold))
-                            .foregroundStyle(.white)
-                            .lineLimit(1)
+                    // Right Side: Track Info and Controls
+                    VStack(alignment: .leading, spacing: 8) {
+                        // Track Info (Title + Artist)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(service.info.trackName)
+                                .font(appearance.font(size: 13, weight: .bold))
+                                .foregroundStyle(.white)
+                                .lineLimit(1)
 
-                        Text(service.info.artistName)
-                            .font(appearance.font(size: 10))
-                            .foregroundStyle(.white.opacity(0.6))
-                            .lineLimit(1)
+                            Text(service.info.artistName)
+                                .font(appearance.font(size: 11))
+                                .foregroundStyle(.white.opacity(0.6))
+                                .lineLimit(1)
+                        }
+
+                        // Playback controls (Horizontal alignment)
+                        HStack(spacing: 16) {
+                            Button(action: { service.previousTrack() }) {
+                                Image(systemName: "backward.fill")
+                                    .font(.system(size: 11))
+                            }
+                            .buttonStyle(.plain)
+
+                            Button(action: { service.togglePlayPause() }) {
+                                Image(systemName: service.info.isPlaying ? "pause.fill" : "play.fill")
+                                    .font(.system(size: 14))
+                            }
+                            .buttonStyle(.plain)
+
+                            Button(action: { service.nextTrack() }) {
+                                Image(systemName: "forward.fill")
+                                    .font(.system(size: 11))
+                            }
+                            .buttonStyle(.plain)
+                        }
+                        .foregroundStyle(.white)
                     }
-                    .frame(maxWidth: .infinity, alignment: .center)
-
-                    // Playback controls (Beneath the album art and info)
-                    HStack(spacing: 12) {
-                        Spacer()
-                        
-                        Button(action: { service.previousTrack() }) {
-                            Image(systemName: "backward.fill")
-                                .font(.system(size: 11))
-                        }
-                        .buttonStyle(.plain)
-
-                        Button(action: { service.togglePlayPause() }) {
-                            Image(systemName: service.info.isPlaying ? "pause.fill" : "play.fill")
-                                .font(.system(size: 14))
-                        }
-                        .buttonStyle(.plain)
-
-                        Button(action: { service.nextTrack() }) {
-                            Image(systemName: "forward.fill")
-                                .font(.system(size: 11))
-                        }
-                        .buttonStyle(.plain)
-
-                        Spacer()
-                    }
-                    .foregroundStyle(.white)
-                    .padding(.top, 1)
-                    .padding(.bottom, 2)
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
             }
         }
