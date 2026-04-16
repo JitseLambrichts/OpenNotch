@@ -217,11 +217,13 @@ struct ClaudeUsageBarView: View {
                     .animation(.easeOut(duration: 0.2), value: service.utilization)
 
                 Text("\(Int(service.utilization * 100))%")
-                    .font(appearance.font(size: 11, weight: .medium))
-                    .foregroundStyle(.white.opacity(0.65))
+                    .font(appearance.font(size: 10, weight: .bold))
+                    .foregroundStyle(.white.opacity(0.8))
                     .monospacedDigit()
-                    .frame(minWidth: 36, alignment: .trailing)
+                    .frame(minWidth: 32, alignment: .trailing)
             }
+            .padding(.vertical, 2)
+            .background(Color.black.opacity(0.01)) // Helps with hit testing if needed
         }
     }
 }

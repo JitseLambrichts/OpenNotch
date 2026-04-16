@@ -634,29 +634,29 @@ struct NowPlayingWidget: View {
                                 artworkPlaceholder
                             }
                         }
-                        .frame(width: 80, height: 80)
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                        .frame(width: 70, height: 70)
+                        .clipShape(RoundedRectangle(cornerRadius: 10))
 
                         Image(nsImage: sourceBadgeIcon)
                             .resizable()
                             .scaledToFill()
-                            .frame(width: 18, height: 18)
+                            .frame(width: 16, height: 16)
                             .clipShape(Circle())
                             .overlay(
                                 Circle().stroke(Color.white.opacity(0.35), lineWidth: 1)
                             )
-                            .padding(4)
+                            .padding(2)
                     }
 
                     // Track Info (Title + Artist)
-                    VStack(alignment: .center, spacing: 4) {
+                    VStack(alignment: .center, spacing: 2) {
                         Text(service.info.trackName)
-                            .font(appearance.font(size: 13, weight: .bold))
+                            .font(appearance.font(size: 12, weight: .bold))
                             .foregroundStyle(.white)
                             .lineLimit(1)
 
                         Text(service.info.artistName)
-                            .font(appearance.font(size: 11))
+                            .font(appearance.font(size: 10))
                             .foregroundStyle(.white.opacity(0.6))
                             .lineLimit(1)
                     }
@@ -668,27 +668,27 @@ struct NowPlayingWidget: View {
                         
                         Button(action: { service.previousTrack() }) {
                             Image(systemName: "backward.fill")
-                                .font(.system(size: 12))
+                                .font(.system(size: 11))
                         }
                         .buttonStyle(.plain)
 
                         Button(action: { service.togglePlayPause() }) {
                             Image(systemName: service.info.isPlaying ? "pause.fill" : "play.fill")
-                                .font(.system(size: 16))
+                                .font(.system(size: 14))
                         }
                         .buttonStyle(.plain)
 
                         Button(action: { service.nextTrack() }) {
                             Image(systemName: "forward.fill")
-                                .font(.system(size: 12))
+                                .font(.system(size: 11))
                         }
                         .buttonStyle(.plain)
 
                         Spacer()
                     }
                     .foregroundStyle(.white)
-                    .padding(.top, 2)
-                    .padding(.bottom, 5)
+                    .padding(.top, 1)
+                    .padding(.bottom, 2)
                 }
             }
         }
@@ -697,7 +697,7 @@ struct NowPlayingWidget: View {
     }
 
     private var artworkPlaceholder: some View {
-        RoundedRectangle(cornerRadius: 12)
+        RoundedRectangle(cornerRadius: 10)
             .fill(
                 LinearGradient(
                     colors: [appearance.color, .blue, .purple],
@@ -707,7 +707,7 @@ struct NowPlayingWidget: View {
             )
             .overlay(
                 Image(systemName: "music.note")
-                    .font(.system(size: 30))
+                    .font(.system(size: 24))
                     .foregroundStyle(.white.opacity(0.8))
             )
     }

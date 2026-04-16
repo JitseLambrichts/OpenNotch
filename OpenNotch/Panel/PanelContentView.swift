@@ -65,6 +65,7 @@ struct PanelContentView: View {
                     ForEach(Array(orderedEnabledWidgets.enumerated()), id: \.element.id) { index, widget in
                         WidgetContainerView(widgetConfig: widget)
                             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+                            .clipped()
 
                         if index < orderedEnabledWidgets.count - 1 {
                             Divider()
