@@ -97,9 +97,12 @@ final class NowPlayingService {
                 // AppleScript `audible` is often delayed. If the user just toggled play/pause,
                 // we trust our local UI state for a longer window, or indefinitely until a new track starts.
 
-                // If the track changed, reset our internal knowledge.
+                // If the track changed, assume it's playing immediately.
                 if info.trackName != self.info.trackName {
-                    self.lastUserToggleTime = .distantPast
+                    info.isPlaying = true
+                    // Set to now so the caching branches fire on subsequent polls,
+                    // preventing the next fetch from overwriting the playing state.
+                    self.lastUserToggleTime = Date()
                 } else {
                     // Track is the same. If the user recently toggled, trust the UI state.
                     let timeSinceToggle = Date().timeIntervalSince(self.lastUserToggleTime)
@@ -248,13 +251,7 @@ final class NowPlayingService {
                     set tabURL to URL of t
                     if tabURL contains "youtube.com" or tabURL contains "music.apple.com" or tabURL contains "spotify.com" or tabURL contains "soundcloud.com" then
                         set tabTitle to title of t
-                        set isTabAudible to "false"
-                        try
-                            if audible of t is true then
-                                set isTabAudible to "true"
-                            end if
-                        end try
-                        return tabTitle & "|||" & tabURL & "|||" & isTabAudible
+                        return tabTitle & "|||" & tabURL & "|||true"
                     end if
                 end repeat
             end repeat
