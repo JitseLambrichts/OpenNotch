@@ -80,6 +80,14 @@ struct PanelContentView: View {
         }
         .padding(.top, topPadding)
         .environment(\.appearance, configManager.config.appearance)
+        .overlay(alignment: .bottom) {
+            if configManager.config.claudeUsage?.showBar != false {
+                ClaudeUsageBarView()
+                    .environment(\.appearance, configManager.config.appearance)
+                    .padding(.horizontal, 24)
+                    .padding(.bottom, safeSpaceManager.isSafeSpaceActive ? 8 : 14)
+            }
+        }
     }
 
     private var orderedEnabledWidgets: [WidgetConfig] {

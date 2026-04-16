@@ -6,6 +6,7 @@ import SwiftUI
 struct AppConfig: Codable, Equatable {
     var widgets: [WidgetConfig]
     var appearance: AppearanceConfig
+    var claudeUsage: ClaudeUsageConfig?
 
     static let `default` = AppConfig(
         widgets: [
@@ -14,8 +15,16 @@ struct AppConfig: Codable, Equatable {
             WidgetConfig(id: "nowPlaying", displayName: "Now Playing", iconName: "music.note", enabled: true, order: 2, settings: [:]),
             WidgetConfig(id: "calendar", displayName: "Upcoming Events", iconName: "calendar.badge.clock", enabled: true, order: 3, settings: [:]),
         ],
-        appearance: .default
+        appearance: .default,
+        claudeUsage: ClaudeUsageConfig()
     )
+}
+
+// MARK: – Claude Usage Config
+
+struct ClaudeUsageConfig: Codable, Equatable {
+    var organizationId: String?
+    var showBar: Bool?
 }
 
 // MARK: – Widget Config

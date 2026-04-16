@@ -12,6 +12,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     await loadConfig();
     renderWidgets();
     bindAppearanceControls();
+    bindClaudeCookieControls();
 });
 
 // ── API ───────────────────────────────────
@@ -213,6 +214,14 @@ function bindAppearanceControls() {
         config.appearance.enableHoverToOpen = e.target.checked;
         debouncedSave();
     });
+
+    const showBar = document.getElementById('showClaudeUsageBar');
+    showBar.checked = config.claudeUsage?.showBar !== false;
+    showBar.addEventListener('change', (e) => {
+        if (!config.claudeUsage) config.claudeUsage = {};
+        config.claudeUsage.showBar = e.target.checked;
+        debouncedSave();
+    });
 }
 
 function applyAccentColor(color) {
@@ -230,6 +239,81 @@ function hexToRgba(hex, alpha) {
     const b = parseInt(safeHex.slice(4, 6), 16);
     if ([r, g, b].some(Number.isNaN)) return `rgba(10, 132, 255, ${alpha})`;
     return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+// ── Claude Cookie Controls ────────────────
+
+async function bindClaudeCookieControls() {
+    const input = document.getElementById('claudeCookie');
+    const saveBtn = document.getElementById('saveCookieBtn');
+    const clearBtn = document.getElementById('clearCookieBtn');
+    const statusEl = document.getElementById('cookieStatus');
+
+    async function loadStatus() {
+        try {
+            const res = await fetch('/api/claude-cookie/status');
+            const data = await res.json();
+            if (data.hasCookie) {
+                if (data.lastError) {
+                    setStatus(data.lastError, 'error');
+                } else {
+                    setStatus('Cookie saved', 'ok');
+                }
+            } else {
+                setStatus('No cookie set', 'muted');
+            }
+        } catch {
+            setStatus('Could not reach server', 'error');
+        }
+    }
+
+    function setStatus(msg, type) {
+        statusEl.textContent = msg;
+        statusEl.className = 'cookie-status ' + type;
+    }
+
+    saveBtn.addEventListener('click', async () => {
+        const cookie = input.value.trim();
+        if (!cookie) return;
+        saveBtn.disabled = true;
+        try {
+            const res = await fetch('/api/claude-cookie', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ cookie })
+            });
+            if (res.ok) {
+                input.value = '';
+                setStatus('Cookie saved — fetching usage…', 'ok');
+                setTimeout(loadStatus, 2000);
+            } else {
+                let errMsg = 'Failed to save cookie';
+                try {
+                    const body = await res.json();
+                    if (body?.error) errMsg = body.error;
+                } catch {
+                    // Keep default message when response body is not JSON.
+                }
+                setStatus(errMsg, 'error');
+            }
+        } catch {
+            setStatus('Network error', 'error');
+        } finally {
+            saveBtn.disabled = false;
+        }
+    });
+
+    clearBtn.addEventListener('click', async () => {
+        try {
+            await fetch('/api/claude-cookie', { method: 'DELETE' });
+            input.value = '';
+            setStatus('Cookie cleared', 'muted');
+        } catch {
+            setStatus('Network error', 'error');
+        }
+    });
+
+    await loadStatus();
 }
 
 // ── Save Indicator ────────────────────────

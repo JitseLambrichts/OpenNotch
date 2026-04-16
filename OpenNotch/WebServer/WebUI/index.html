@@ -92,6 +92,38 @@
             </div>
         </section>
 
+        <section class="section panel-card" aria-labelledby="claude-heading">
+            <h2>
+                <span class="section-icon" aria-hidden="true">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                        <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+                        <path d="M2 17L12 22L22 17" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+                        <path d="M2 12L12 17L22 12" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+                    </svg>
+                </span>
+                Claude Usage Bar
+            </h2>
+            <p id="claude-heading" class="sr-only">Claude Usage Bar</p>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="showClaudeUsageBar">Show usage bar</label>
+                    <label class="toggle">
+                        <input type="checkbox" id="showClaudeUsageBar" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+            </div>
+            <div class="cookie-section">
+                <p class="cookie-desc">Paste your claude.ai session cookie to track your 5-hour usage window. Get it from <strong>DevTools → Application → Cookies → claude.ai</strong> — copy the full value of <code>sessionKey</code>.</p>
+                <div class="cookie-row">
+                    <input type="password" id="claudeCookie" placeholder="sessionKey=sk-ant-…" autocomplete="off" spellcheck="false">
+                    <button id="saveCookieBtn" class="btn-primary">Save</button>
+                    <button id="clearCookieBtn" class="btn-secondary">Clear</button>
+                </div>
+                <p id="cookieStatus" class="cookie-status"></p>
+            </div>
+        </section>
+
         <section class="section panel-card about-section" aria-labelledby="about-heading">
             <h2>
                 <span class="section-icon" aria-hidden="true">

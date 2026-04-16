@@ -365,6 +365,93 @@ h1 {
     padding: 2px 6px;
 }
 
+.cookie-section {
+    margin-top: 16px;
+    border-top: 1px solid var(--line);
+    padding-top: 16px;
+}
+
+.cookie-desc {
+    font-size: 0.84rem;
+    color: var(--text-muted);
+    margin-bottom: 12px;
+    line-height: 1.55;
+}
+
+.cookie-desc code {
+    font-family: 'SF Mono', 'Menlo', monospace;
+    font-size: 0.77rem;
+    background: #ecf2fb;
+    border: 1px solid rgba(14, 34, 65, 0.08);
+    border-radius: 7px;
+    padding: 2px 6px;
+}
+
+.cookie-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.cookie-row input[type="password"] {
+    flex: 1;
+    font-family: 'SF Mono', 'Menlo', monospace;
+    font-size: 0.78rem;
+    padding: 8px 12px;
+    border: 1px solid var(--line-strong);
+    border-radius: var(--radius-md);
+    background: var(--card-bg-strong);
+    color: var(--text-primary);
+    min-width: 0;
+}
+
+.cookie-row input[type="password"]:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.btn-primary {
+    padding: 8px 14px;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius-md);
+    font-size: 0.84rem;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: opacity var(--motion-fast);
+}
+
+.btn-primary:hover { opacity: 0.88; }
+.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.btn-secondary {
+    padding: 8px 14px;
+    background: transparent;
+    color: var(--text-muted);
+    border: 1px solid var(--line-strong);
+    border-radius: var(--radius-md);
+    font-size: 0.84rem;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background var(--motion-fast);
+}
+
+.btn-secondary:hover { background: var(--bg-deep); }
+
+.cookie-status {
+    margin-top: 8px;
+    font-size: 0.82rem;
+    min-height: 1.2em;
+}
+
+.cookie-status.ok { color: var(--positive); }
+.cookie-status.error { color: #c0392b; }
+.cookie-status.muted { color: var(--text-muted); }
+
 .save-indicator {
     position: fixed;
     left: 50%;

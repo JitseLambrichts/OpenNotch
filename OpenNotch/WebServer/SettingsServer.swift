@@ -19,6 +19,9 @@ final class SettingsServer: @unchecked Sendable {
             // API routes — closure variants use `handler:` label
             await server.appendRoute("GET /api/config",  handler: self.handleGetConfig)
             await server.appendRoute("PUT /api/config",  handler: self.handlePutConfig)
+            await server.appendRoute("GET /api/claude-cookie/status", handler: self.handleGetClaudeCookieStatus)
+            await server.appendRoute("PUT /api/claude-cookie",        handler: self.handlePutClaudeCookie)
+            await server.appendRoute("DELETE /api/claude-cookie",     handler: self.handleDeleteClaudeCookie)
 
             // Static assets
             await server.appendRoute("GET /",            handler: self.handleIndex)
@@ -48,8 +51,7 @@ final class SettingsServer: @unchecked Sendable {
         }
         return HTTPResponse(
             statusCode: .ok,
-            headers: HTTPHeaders([.contentType: "application/json",
-                                  HTTPHeader("Access-Control-Allow-Origin"): "*"]),
+            headers: HTTPHeaders([.contentType: "application/json"]),
             body: data
         )
     }
@@ -72,6 +74,72 @@ final class SettingsServer: @unchecked Sendable {
                 body: msg.data(using: .utf8)!
             )
         }
+    }
+
+    // MARK: – Claude Cookie Handlers
+
+    @Sendable private func handleGetClaudeCookieStatus(_ request: HTTPRequest) async throws -> HTTPResponse {
+        struct StatusResponse: Encodable {
+            let hasCookie: Bool
+            let organizationId: String?
+            let lastError: String?
+        }
+        let resp = StatusResponse(
+            hasCookie: ClaudeUsageKeychain.hasCookie(),
+            organizationId: ConfigManager.shared.config.claudeUsage?.organizationId,
+            lastError: ClaudeUsageService.shared.lastError
+        )
+        let data = (try? JSONEncoder().encode(resp)) ?? Data()
+        return HTTPResponse(
+            statusCode: .ok,
+            headers: HTTPHeaders([.contentType: "application/json"]),
+            body: data
+        )
+    }
+
+    @Sendable private func handlePutClaudeCookie(_ request: HTTPRequest) async throws -> HTTPResponse {
+        let body = try await request.bodyData
+        struct Payload: Decodable { let cookie: String }
+        guard let payload = try? JSONDecoder().decode(Payload.self, from: body),
+              let normalizedCookie = normalizedClaudeCookieValue(from: payload.cookie) else {
+            return HTTPResponse(
+                statusCode: .badRequest,
+                headers: HTTPHeaders([.contentType: "application/json"]),
+                body: #"{"error":"Expected a valid claude session cookie value"}"#.data(using: .utf8)!
+            )
+        }
+
+        let saveStatus = ClaudeUsageKeychain.save(normalizedCookie)
+        guard saveStatus == errSecSuccess else {
+            return HTTPResponse(
+                statusCode: .internalServerError,
+                headers: HTTPHeaders([.contentType: "application/json"]),
+                body: #"{"error":"Failed to save cookie in Keychain"}"#.data(using: .utf8)!
+            )
+        }
+
+        await MainActor.run {
+            var config = ConfigManager.shared.config
+            if config.claudeUsage == nil { config.claudeUsage = ClaudeUsageConfig() }
+            config.claudeUsage!.organizationId = nil
+            ConfigManager.shared.updateConfig(config)
+        }
+        ClaudeUsageService.shared.cookieDidChange()
+        return HTTPResponse(
+            statusCode: .ok,
+            headers: HTTPHeaders([.contentType: "application/json"]),
+            body: #"{"status":"ok"}"#.data(using: .utf8)!
+        )
+    }
+
+    @Sendable private func handleDeleteClaudeCookie(_ request: HTTPRequest) async throws -> HTTPResponse {
+        ClaudeUsageKeychain.delete()
+        ClaudeUsageService.shared.cookieDidChange()
+        return HTTPResponse(
+            statusCode: .ok,
+            headers: HTTPHeaders([.contentType: "application/json"]),
+            body: #"{"status":"ok"}"#.data(using: .utf8)!
+        )
     }
 
     // MARK: – Static File Handlers
@@ -99,5 +167,25 @@ final class SettingsServer: @unchecked Sendable {
             headers: HTTPHeaders([.contentType: contentType]),
             body: data
         )
+    }
+
+    private func normalizedClaudeCookieValue(from rawValue: String) -> String? {
+        let trimmed = rawValue.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty,
+              trimmed.count <= 4096,
+              !trimmed.contains("\n"),
+              !trimmed.contains("\r") else {
+            return nil
+        }
+
+        if trimmed.contains("sessionKey=") {
+            return trimmed
+        }
+
+        // If user pastes only the cookie value, normalize to a Cookie header pair.
+        if trimmed.contains(";") || trimmed.contains("=") {
+            return nil
+        }
+        return "sessionKey=\(trimmed)"
     }
 }
