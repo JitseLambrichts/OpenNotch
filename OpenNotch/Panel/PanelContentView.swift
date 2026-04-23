@@ -14,24 +14,32 @@ struct PanelContentView: View {
                 // Tab switcher
                 HStack(spacing: 8) {
                     Button(action: { safeSpaceManager.isSafeSpaceActive = false }) {
-                        Text("Widgets")
-                            .font(.system(size: 13, weight: .medium))
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 6)
-                            .background(!safeSpaceManager.isSafeSpaceActive ? Color.white.opacity(0.1) : Color.clear)
-                            .cornerRadius(16)
-                            .foregroundStyle(!safeSpaceManager.isSafeSpaceActive ? .white : .white.opacity(0.5))
+                        HStack(spacing: 5) {
+                            Image(systemName: "house.fill")
+                                .font(.system(size: 11))
+                            Text("Home")
+                                .font(.system(size: 13, weight: .medium))
+                        }
+                        .frame(height: 28)
+                        .padding(.horizontal, 12)
+                        .background(!safeSpaceManager.isSafeSpaceActive ? Color.white.opacity(0.1) : Color.clear)
+                        .cornerRadius(16)
+                        .foregroundStyle(!safeSpaceManager.isSafeSpaceActive ? .white : .white.opacity(0.5))
                     }
                     .buttonStyle(.plain)
 
                     Button(action: { safeSpaceManager.isSafeSpaceActive = true }) {
-                        Text("Safe Space")
-                            .font(.system(size: 13, weight: .medium))
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 6)
-                            .background(safeSpaceManager.isSafeSpaceActive ? Color.white.opacity(0.1) : Color.clear)
-                            .cornerRadius(16)
-                            .foregroundStyle(safeSpaceManager.isSafeSpaceActive ? .white : .white.opacity(0.5))
+                        HStack(spacing: 5) {
+                            Image(systemName: "paperclip")
+                                .font(.system(size: 11))
+                            Text("Clipboard")
+                                .font(.system(size: 13, weight: .medium))
+                        }
+                        .frame(height: 28)
+                        .padding(.horizontal, 12)
+                        .background(safeSpaceManager.isSafeSpaceActive ? Color.white.opacity(0.1) : Color.clear)
+                        .cornerRadius(16)
+                        .foregroundStyle(safeSpaceManager.isSafeSpaceActive ? .white : .white.opacity(0.5))
                     }
                     .buttonStyle(.plain)
                 }
@@ -49,16 +57,21 @@ struct PanelContentView: View {
                 }
                 .buttonStyle(.plain)
             }
+            .frame(height: 28)
             .padding(.horizontal, 24)
             .padding(.top, 20)
             .padding(.bottom, 12)
 
             if safeSpaceManager.isSafeSpaceActive {
-                // Safe Space Tab
-                SafeSpaceWidgetView()
-                    .padding(.horizontal, 24)
-                    .padding(.bottom, 36)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                // Clipboard Tab — left: file drop, right: clipboard history
+                HStack(alignment: .top, spacing: 12) {
+                    SafeSpaceWidgetView()
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    ClipboardHistoryView()
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                }
+                .padding(.horizontal, 24)
+                .padding(.bottom, 36)
             } else {
                 // Widgets Tab (Horizontal)
                 HStack(alignment: .center, spacing: 0) {

@@ -30,6 +30,7 @@ struct SafeSpaceWidgetView: View {
                 .frame(minHeight: 60)
             }
         }
+        .frame(maxHeight: .infinity, alignment: .top)
         .padding(.vertical, 8)
         .background(Color(NSColor.windowBackgroundColor).opacity(0.5))
         .cornerRadius(12)
